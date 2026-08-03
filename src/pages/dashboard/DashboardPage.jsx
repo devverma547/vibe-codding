@@ -5,95 +5,93 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'rec
 import ScanModal from '../../components/scanner/ScanModal';
 import OnboardingModal from '../../components/auth/OnboardingModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { db } from '../../services/database.service';
+import { websiteService } from '../../services/database.service';
 import { scannerService } from '../../services/scanner.service';
 import { supabase } from '../../config/supabase';
-
-const INITIAL_SITES = [
-  {
-    id: 'novaflow-ai.vercel.app',
-    name: 'novaflow-ai.vercel.app',
-    issues: '24 issues · 5 critical',
-    lastScan: '2 hours ago',
-    score: 72,
-    trend: '+6',
-    trendUp: true
-  },
-  {
-    id: 'lumen-studio.com',
-    name: 'lumen-studio.com',
-    issues: '6 issues · 0 critical',
-    lastScan: 'yesterday',
-    score: 91,
-    trend: '+2',
-    trendUp: true
-  },
-  {
-    id: 'packr-app.io',
-    name: 'packr-app.io',
-    issues: '31 issues · 7 critical',
-    lastScan: 'yesterday',
-    score: 64,
-    trend: '-4',
-    trendUp: false
-  },
-  {
-    id: 'hearth-cafe.site',
-    name: 'hearth-cafe.site',
-    issues: '9 issues · 1 critical',
-    lastScan: '3 days ago',
-    score: 85,
-    trend: '+11',
-    trendUp: true
-  },
-  {
-    id: 'quill-notes.dev',
-    name: 'quill-notes.dev',
-    issues: '14 issues · 2 critical',
-    lastScan: '5 days ago',
-    score: 78,
-    trend: '—',
-    trendUp: true
-  }
-];
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
   const [quickScanUrl, setQuickScanUrl] = useState('');
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [targetScanUrl, setTargetScanUrl] = useState('');
   const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [newSiteUrl, setNewSiteUrl] = useState('');
+  
   const [sites, setSites] = useState([]);
-  const [totalScansCount, setTotalScansCount] = useState(38);
+  const [stats, setStats] = useState({ totalScans: 0, avgScore: 0, criticalIssues: 0 });
+  const [trendData, setTrendData] = useState([]);
+  const [bestPerformer, setBestPerformer] = useState({ name: 'None', score: 0 });
 
   useEffect(() => {
-    const saved = db.getCollection('monitored_sites');
-    if (saved && saved.length > 0) {
-      setSites(saved);
-    } else {
-      setSites(INITIAL_SITES);
-      INITIAL_SITES.forEach(s => db.create('monitored_sites', s));
+    if (!user) {
+      setSites([]);
+      setStats({ totalScans: 0, avgScore: 0, criticalIssues: 0 });
+      setTrendData([]);
+      return;
     }
 
-    scannerService.getUserScans().then(res => {
-      if (res.success && Array.isArray(res.data)) {
-        setTotalScansCount(Math.max(38, res.data.length));
+    const loadData = async () => {
+      try {
+        // Fetch monitored websites
+        const websites = await websiteService.getAll(user.id);
+        const mappedSites = websites.map(w => ({
+          id: w.id,
+          name: w.name || w.domain,
+          issues: `${w.scan_count || 0} scans`,
+          lastScan: w.last_scanned_at ? new Date(w.last_scanned_at).toLocaleDateString() : 'never',
+          score: w.last_score || 0,
+          trend: '',
+          trendUp: true
+        }));
+        setSites(mappedSites);
+
+        // Best performer
+        if (mappedSites.length > 0) {
+          const best = [...mappedSites].sort((a, b) => b.score - a.score)[0];
+          setBestPerformer({ name: best.name, score: best.score });
+        }
+
+        // Fetch stats
+        const userStats = await scannerService.getUserStats(user.id);
+        setStats({
+          totalScans: userStats.totalScans || 0,
+          avgScore: userStats.avgScore || 0,
+          criticalIssues: userStats.criticalIssues || 0
+        });
+
+        // Fetch recent scans for trend line
+        const scansRes = await scannerService.getUserScans(user.id);
+        if (scansRes.success && scansRes.data?.length > 0) {
+          // Filter completed scans that have a score
+          const completedScans = scansRes.data.filter(s => s.status === 'completed' && s.overall_score);
+          const recentScans = completedScans
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+            .slice(-7);
+            
+          setTrendData(recentScans.map((s, i) => ({
+            scan: `Scan ${i + 1}`,
+            score: s.overall_score || 0
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
       }
-    }).catch(console.error);
-    
+    };
+
+    loadData();
+
     // Check if user is newly registered and needs onboarding
     const checkOnboarding = async () => {
       if (!user) return;
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('id')
         .eq('id', user.id)
         .maybeSingle();
       
-      // If no data is found, they haven't onboarded yet
       if (!data) {
         setShowOnboarding(true);
       }
@@ -102,44 +100,31 @@ export default function DashboardPage() {
     checkOnboarding();
   }, [user]);
 
-  // Score trend chart data matching screenshot #2 (58, 61, 60, 66, 69, 68, 72)
-  const trendData = [
-    { scan: 'Scan 1', score: 58 },
-    { scan: 'Scan 2', score: 61 },
-    { scan: 'Scan 3', score: 60 },
-    { scan: 'Scan 4', score: 66 },
-    { scan: 'Scan 5', score: 69 },
-    { scan: 'Scan 6', score: 68 },
-    { scan: 'Scan 7', score: 72 },
-  ];
-
-  const avgScore = sites.length > 0
-    ? Math.round(sites.reduce((acc, s) => acc + s.score, 0) / sites.length)
-    : 78;
-
   const handleQuickScan = (e) => {
     e?.preventDefault();
-    const finalUrl = quickScanUrl.trim() || 'https://your-site.com';
-    setTargetScanUrl(finalUrl);
+    if (!quickScanUrl.trim()) return;
+    setTargetScanUrl(quickScanUrl.trim());
     setIsScanModalOpen(true);
   };
 
-  const handleAddSite = (e) => {
+  const handleAddSite = async (e) => {
     e.preventDefault();
-    if (!newSiteUrl.trim()) return;
-    const cleanDomain = newSiteUrl.replace(/https?:\/\//, '').replace(/\/.*$/, '');
-    const newEntry = {
-      id: cleanDomain,
-      name: cleanDomain,
-      issues: '12 issues · 2 critical',
-      lastScan: 'just now',
-      score: 82,
-      trend: '+4',
-      trendUp: true
-    };
-    const updated = [newEntry, ...sites];
-    setSites(updated);
-    db.create('monitored_sites', newEntry);
+    if (!newSiteUrl.trim() || !user) return;
+    
+    const newSite = await websiteService.create(user.id, newSiteUrl);
+    if (newSite) {
+      const newEntry = {
+        id: newSite.id,
+        name: newSite.name || newSite.domain,
+        issues: '0 scans',
+        lastScan: 'just now',
+        score: 0,
+        trend: '',
+        trendUp: true
+      };
+      setSites([newEntry, ...sites]);
+    }
+    
     setNewSiteUrl('');
     setIsAddSiteModalOpen(false);
   };
@@ -148,12 +133,12 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 flex flex-col font-sans">
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 space-y-8">
         
-        {/* TOP DASHBOARD HEADER - Exact match from Screenshot #2 */}
+        {/* TOP DASHBOARD HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Your sites</h1>
             <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
-              {sites.length} monitored {sites.length === 1 ? 'site' : 'sites'} · re-scanned weekly
+              {sites.length} monitored {sites.length === 1 ? 'site' : 'sites'}
             </p>
           </div>
 
@@ -167,39 +152,39 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 4 METRIC STAT CARDS - Exact match from Screenshot #2 */}
+        {/* 4 METRIC STAT CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-2">
             <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Average score</div>
-            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">{avgScore}</div>
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">{stats.avgScore}</div>
             <div className="text-xs text-slate-500 dark:text-gray-500">across {sites.length} sites</div>
           </div>
 
           <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-2">
             <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Critical issues</div>
-            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">15</div>
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">{stats.criticalIssues}</div>
             <div className="text-xs text-slate-500 dark:text-gray-500">needs attention</div>
           </div>
 
           <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-2">
-            <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Scans this month</div>
-            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">{totalScansCount}</div>
-            <div className="text-xs text-slate-500 dark:text-gray-500">of unlimited</div>
+            <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Total scans</div>
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">{stats.totalScans}</div>
+            <div className="text-xs text-slate-500 dark:text-gray-500">completed</div>
           </div>
 
           <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-2">
             <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Best performer</div>
-            <div className="text-3xl font-extrabold text-[#00F5A0] font-mono">91</div>
-            <div className="text-xs text-slate-600 dark:text-gray-400 truncate">lumen-studio.com</div>
+            <div className="text-3xl font-extrabold text-[#00F5A0] font-mono">{bestPerformer.score}</div>
+            <div className="text-xs text-slate-600 dark:text-gray-400 truncate">{bestPerformer.name}</div>
           </div>
 
         </div>
 
-        {/* MAIN LAYOUT: LEFT SITES LIST | RIGHT SCORE TREND & QUICK SCAN */}
+        {/* MAIN LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
-          {/* LEFT COLUMN: Monitored Websites (2 columns span) */}
+          {/* LEFT COLUMN: Monitored Websites */}
           <div className="lg:col-span-2 p-6 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Monitored websites</h2>
@@ -214,48 +199,55 @@ export default function DashboardPage() {
 
             {/* Site List Cards */}
             <div className="space-y-3">
-              {sites.map((site) => (
-                <div
-                  key={site.id}
-                  className="p-4 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-colors shrink-0">
-                      <span className="text-sm font-bold text-[#00F5A0]">{site.name.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#00F5A0] dark:group-hover:text-[#00F5A0] transition-colors">
-                        {site.name}
-                      </h3>
-                      <p className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">
-                        {site.issues} · {site.lastScan}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 justify-between sm:justify-end">
-                    <div className="text-right">
-                      <span className={`text-xl font-extrabold font-mono ${
-                        site.score >= 80 ? 'text-[#00F5A0]' : site.score >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        {site.score}
-                      </span>
-                      <span className={`text-xs ${site.trendUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} font-mono ml-1.5`}>
-                        {site.trend}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => navigate(`/report/${site.id}`)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-white/5 hover:bg-slate-300 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition-colors"
-                    >
-                      Report <ArrowUpRight size={14} />
-                    </button>
-                  </div>
+              {sites.length === 0 ? (
+                <div className="text-center p-6 bg-slate-100 dark:bg-white/5 rounded-xl text-slate-500 text-sm">
+                  No monitored websites yet. Add one to get started!
                 </div>
-              ))}
-            </div>
+              ) : (
+                sites.map((site) => (
+                  <div
+                    key={site.id}
+                    className="p-4 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-colors shrink-0">
+                        <span className="text-sm font-bold text-[#00F5A0]">{site.name.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#00F5A0] dark:group-hover:text-[#00F5A0] transition-colors">
+                          {site.name}
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">
+                          {site.issues} · {site.lastScan}
+                        </p>
+                      </div>
+                    </div>
 
+                    <div className="flex items-center gap-4 justify-between sm:justify-end">
+                      <div className="text-right">
+                        <span className={`text-xl font-extrabold font-mono ${
+                          site.score >= 80 ? 'text-[#00F5A0]' : site.score >= 70 ? 'text-amber-600 dark:text-amber-400' : site.score > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'
+                        }`}>
+                          {site.score > 0 ? site.score : '-'}
+                        </span>
+                        {site.trend && (
+                          <span className={`text-xs ${site.trendUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} font-mono ml-1.5`}>
+                            {site.trend}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => navigate(`/report/${site.id}`)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-white/5 hover:bg-slate-300 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition-colors"
+                      >
+                        Report <ArrowUpRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           {/* RIGHT COLUMN: SCORE TREND & QUICK SCAN */}
@@ -265,29 +257,35 @@ export default function DashboardPage() {
             <div className="p-6 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-4">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Score trend</h3>
-                <p className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">novaflow-ai.vercel.app · 7 scans</p>
+                <p className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">Recent scans history</p>
               </div>
 
               {/* Chart */}
               <div className="h-44 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData}>
-                    <XAxis dataKey="scan" hide />
-                    <YAxis domain={[50, 80]} hide />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#080C14', borderColor: '#00F5A0', borderRadius: '8px', fontSize: '12px' }} 
-                      itemStyle={{ color: '#00F5A0' }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="score" 
-                      stroke="#00F5A0" 
-                      strokeWidth={3}
-                      dot={{ fill: '#00F5A0', r: 4 }}
-                      activeDot={{ r: 6, fill: '#ffffff', stroke: '#00F5A0' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {trendData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData}>
+                      <XAxis dataKey="scan" hide />
+                      <YAxis domain={[0, 100]} hide />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#080C14', borderColor: '#00F5A0', borderRadius: '8px', fontSize: '12px' }} 
+                        itemStyle={{ color: '#00F5A0' }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="score" 
+                        stroke="#00F5A0" 
+                        strokeWidth={3}
+                        dot={{ fill: '#00F5A0', r: 4 }}
+                        activeDot={{ r: 6, fill: '#ffffff', stroke: '#00F5A0' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+                    No scan data available
+                  </div>
+                )}
               </div>
             </div>
 
@@ -321,6 +319,7 @@ export default function DashboardPage() {
         </div>
 
       </main>
+      
       {/* Add Site Modal */}
       {isAddSiteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -358,14 +357,12 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Quick Scanner Modal */}
       <ScanModal
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}
         targetUrl={targetScanUrl}
       />
 
-      {/* Onboarding Modal */}
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
@@ -373,3 +370,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

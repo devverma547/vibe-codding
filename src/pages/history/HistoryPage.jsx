@@ -75,7 +75,7 @@ const HistoryPage = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Scan History</h1>
-          <p className="text-secondary mt-1">Review all your previous website analysis reports.</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Review all your previous website analysis reports.</p>
         </div>
         <Link to="/#scan">
           <Button variant="primary">New Scan</Button>
@@ -85,17 +85,17 @@ const HistoryPage = () => {
       {/* Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-4 flex flex-col items-center justify-center text-center">
-          <span className="text-sm text-secondary">Total Scans</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Total Scans</span>
           <span className="text-2xl font-bold mt-1">{stats.total}</span>
         </Card>
         <Card className="p-4 flex flex-col items-center justify-center text-center">
-          <span className="text-sm text-secondary">Average Score</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Average Score</span>
           <span className={`text-2xl font-bold mt-1 ${getScoreColor(stats.average)}`}>
             {stats.average}/100
           </span>
         </Card>
         <Card className="p-4 flex flex-col items-center justify-center text-center">
-          <span className="text-sm text-secondary">Last Scan</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">Last Scan</span>
           <span className="text-2xl font-bold mt-1 text-base">
             {stats.latest ? formatRelativeTime(new Date(stats.latest)) : 'Never'}
           </span>
@@ -149,11 +149,11 @@ const HistoryPage = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-                  <th className="p-4 font-medium text-sm text-secondary">Website</th>
-                  <th className="p-4 font-medium text-sm text-secondary">Date</th>
-                  <th className="p-4 font-medium text-sm text-secondary">Score</th>
-                  <th className="p-4 font-medium text-sm text-secondary">Status</th>
-                  <th className="p-4 font-medium text-sm text-secondary text-right">Actions</th>
+                  <th className="p-4 font-medium text-sm text-gray-500 dark:text-gray-400">Website</th>
+                  <th className="hidden md:table-cell p-4 font-medium text-sm text-gray-500 dark:text-gray-400">Date</th>
+                  <th className="p-4 font-medium text-sm text-gray-500 dark:text-gray-400">Score</th>
+                  <th className="hidden md:table-cell p-4 font-medium text-sm text-gray-500 dark:text-gray-400">Status</th>
+                  <th className="p-4 font-medium text-sm text-gray-500 dark:text-gray-400 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -161,21 +161,22 @@ const HistoryPage = () => {
                   <tr key={scan.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-sm">
+                        <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shadow-sm">
                           {scan.url.replace(/^https?:\/\/(www\.)?/, '').charAt(0).toUpperCase()}
                         </div>
-                        <div className="flex flex-col">
-                          <span className="font-medium truncate max-w-[200px] md:max-w-[300px]">{scan.url}</span>
-                          <a href={scan.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium truncate">{scan.url}</span>
+                          <span className="md:hidden text-xs text-gray-500 dark:text-gray-400 mt-1">{formatRelativeTime(scan.date || scan.createdAt)}</span>
+                          <a href={scan.url} target="_blank" rel="noopener noreferrer" className="hidden md:flex text-xs text-blue-500 hover:underline items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mt-1">
                             Visit site <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
                       </div>
                     </td>
-                    <td className="p-4">
+                    <td className="hidden md:table-cell p-4">
                       <div className="flex flex-col">
-                        <span className="text-sm">{formatDate(scan.date)}</span>
-                        <span className="text-xs text-secondary">{formatRelativeTime(scan.date)}</span>
+                        <span className="text-sm">{formatDate(scan.date || scan.createdAt)}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{formatRelativeTime(scan.date || scan.createdAt)}</span>
                       </div>
                     </td>
                     <td className="p-4">
@@ -184,10 +185,10 @@ const HistoryPage = () => {
                           {scan.score}/100
                         </Badge>
                       ) : (
-                        <span className="text-secondary text-sm">-</span>
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">-</span>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="hidden md:table-cell p-4">
                       <Badge variant={scan.score > 0 ? 'success' : 'danger'}>
                         {scan.score > 0 ? 'Completed' : 'Failed'}
                       </Badge>

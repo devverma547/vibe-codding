@@ -5,7 +5,7 @@
  * Full report details stored in browser cache (NOT Supabase).
  */
 import { runLighthouseAnalysis } from './lighthouse.service';
-import { scanService, websiteService, reportCache } from './database.service';
+import { scanService, reportCache } from './database.service';
 import { sanitizeUrl, isValidUrl } from '../utils/validators';
 
 export const scannerService = {
@@ -62,14 +62,14 @@ export const scannerService = {
         await scanService.complete(scanId, lighthouseResults, isLocal);
       }
 
-      // 5. Save full report to browser cache (NOT Supabase)
+      // 5. Save full report to Supabase Storage bucket
       const fullReport = {
         scanId,
         url: finalUrl,
         ...lighthouseResults,
         createdAt: new Date().toISOString(),
       };
-      reportCache.save(scanId, fullReport);
+      await reportCache.save(scanId, fullReport);
 
       if (onProgress) onProgress(100, 7, 'Analysis complete!');
 
@@ -99,10 +99,10 @@ export const scannerService = {
   getReportByScanId: async (scanId) => {
     if (!scanId) return { success: false, error: 'Scan ID is required' };
 
-    // 1. Check browser cache for full report
-    const cached = reportCache.get(scanId);
+    // 1. Check Supabase storage for full report
+    const cached = await reportCache.get(scanId);
     if (cached) {
-      return { success: true, data: cached, source: 'cache' };
+      return { success: true, data: cached, source: 'storage' };
     }
 
     // 2. Check Supabase for scan metadata (scores only)

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, CheckCircle2, ShieldCheck, Search, Sparkles, ArrowRight, Activity, AlertCircle } from 'lucide-react';
+import { Zap, ShieldCheck, ArrowRight, Activity } from 'lucide-react';
 
 export default function HeroLiveQuickScan({ onFullScan }) {
   const [testUrl, setTestUrl] = useState('https://novaflow-ai.vercel.app');

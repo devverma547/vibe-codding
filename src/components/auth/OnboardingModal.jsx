@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, User, Briefcase, Info } from 'lucide-react';
+import { Loader2, User, Briefcase, Info } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../config/supabase';
 
 export default function OnboardingModal({ isOpen, onClose, onSuccess }) {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   

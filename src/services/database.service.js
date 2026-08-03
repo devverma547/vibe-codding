@@ -11,55 +11,47 @@
 import { supabase } from '../config/supabase';
 
 // ================================================================
-// LOCAL REPORT CACHE — stores full report details in browser
+// REPORT CACHE — stores full report details in Supabase Storage
 // ================================================================
-const REPORT_CACHE_KEY = 'siteproof_report_cache';
-const MAX_CACHED_REPORTS = 50; // Keep last 50 reports in browser
 
 export const reportCache = {
-  save(scanId, reportData) {
+  async save(scanId, reportData) {
     try {
-      const cache = JSON.parse(localStorage.getItem(REPORT_CACHE_KEY) || '{}');
-      cache[scanId] = {
-        ...reportData,
-        cachedAt: new Date().toISOString(),
-      };
-      // Evict oldest entries if over limit
-      const keys = Object.keys(cache);
-      if (keys.length > MAX_CACHED_REPORTS) {
-        const sorted = keys.sort((a, b) =>
-          new Date(cache[a].cachedAt) - new Date(cache[b].cachedAt)
-        );
-        for (let i = 0; i < keys.length - MAX_CACHED_REPORTS; i++) {
-          delete cache[sorted[i]];
-        }
-      }
-      localStorage.setItem(REPORT_CACHE_KEY, JSON.stringify(cache));
+      const fileName = `${scanId}.json`;
+      const { error } = await supabase.storage
+        .from('reports')
+        .upload(fileName, JSON.stringify(reportData), {
+          contentType: 'application/json',
+          upsert: true,
+        });
+      if (error) throw error;
     } catch (e) {
-      console.warn('[ReportCache] Failed to save:', e.message);
+      console.warn('[ReportCache] Failed to save to Supabase:', e.message);
     }
   },
 
-  get(scanId) {
+  async get(scanId) {
     try {
-      const cache = JSON.parse(localStorage.getItem(REPORT_CACHE_KEY) || '{}');
-      return cache[scanId] || null;
+      const fileName = `${scanId}.json`;
+      const { data, error } = await supabase.storage
+        .from('reports')
+        .download(fileName);
+      
+      if (error || !data) return null;
+      
+      const text = await data.text();
+      return JSON.parse(text);
     } catch {
       return null;
     }
   },
 
-  remove(scanId) {
+  async remove(scanId) {
     try {
-      const cache = JSON.parse(localStorage.getItem(REPORT_CACHE_KEY) || '{}');
-      delete cache[scanId];
-      localStorage.setItem(REPORT_CACHE_KEY, JSON.stringify(cache));
+      const fileName = `${scanId}.json`;
+      await supabase.storage.from('reports').remove([fileName]);
     } catch { /* ignore */ }
-  },
-
-  clear() {
-    localStorage.removeItem(REPORT_CACHE_KEY);
-  },
+  }
 };
 
 // ================================================================

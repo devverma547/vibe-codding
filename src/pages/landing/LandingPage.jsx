@@ -41,13 +41,7 @@ export default function LandingPage() {
     setIsScanModalOpen(true);
   };
 
-  const placeholderUrls = [
-    'your-startup.com',
-    'my-saas.vercel.app',
-    'shopify-store.com',
-    'portfolio.dev',
-    'landing-page.netlify.app',
-  ];
+
 
   const sampleSites = [
     { label: 'novaflow-ai.vercel.app', url: 'https://novaflow-ai.vercel.app' },
