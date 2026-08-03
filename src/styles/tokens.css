@@ -1,0 +1,147 @@
+/* src/styles/tokens.css */
+:root {
+  /* Color Tokens - SiteProof Obsidian & Mint Theme */
+  --color-bg: #080C14;
+  --color-bg-secondary: #0E1626;
+  --color-bg-tertiary: #141E33;
+  --color-surface: rgba(255, 255, 255, 0.03);
+  --color-surface-hover: rgba(255, 255, 255, 0.06);
+  --color-card-bg: #0D1627;
+  --color-card-border: rgba(0, 245, 160, 0.12);
+  
+  --color-text: #F3F4F6;
+  --color-text-secondary: #9CA3AF;
+  --color-text-tertiary: #6B7280;
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  /* Shadcn UI RGB variables */
+  --background: 8 12 20;
+  --foreground: 243 244 246;
+  --card: 13 22 39;
+  --border-rgb: 255 255 255;
+  --primary-rgb: 0 245 160;
+  --primary-foreground: 0 0 0;
+  --secondary: 14 22 38;
+  --secondary-foreground: 156 163 175;
+  --muted: 20 30 51;
+  --muted-foreground: 156 163 175;
+
+  /* Brand Accents */
+  --color-primary: #00F5A0;
+  --color-primary-hover: #00E093;
+  --color-primary-subtle: rgba(0, 245, 160, 0.12);
+  --color-secondary: #3B82F6;
+  --color-accent: #10B981;
+  
+  --color-success: #00F5A0;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #00F5A0, #00D2FF);
+  --gradient-text: linear-gradient(135deg, #00F5A0 0%, #00E599 50%, #60A5FA 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(0, 245, 160, 0.08), rgba(59, 130, 246, 0.08));
+  --gradient-card: linear-gradient(135deg, rgba(14, 22, 38, 0.9), rgba(13, 21, 39, 0.6));
+  --gradient-hero-glow: radial-gradient(circle at 50% 0%, rgba(0, 245, 160, 0.15) 0%, rgba(8, 12, 20, 0) 70%);
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  --text-xs: 0.75rem;   /* 12px */
+  --text-sm: 0.875rem;  /* 14px */
+  --text-base: 1rem;    /* 16px */
+  --text-lg: 1.125rem;  /* 18px */
+  --text-xl: 1.25rem;   /* 20px */
+  --text-2xl: 1.5rem;   /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem;  /* 36px */
+  --text-5xl: 3rem;     /* 48px */
+  --text-6xl: 3.75rem;  /* 60px */
+
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  /* Borders & Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 12px -2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 32px -4px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 25px rgba(0, 245, 160, 0.25);
+  --shadow-glow-lg: 0 0 50px rgba(0, 245, 160, 0.35);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index scale */
+  --z-dropdown: 1000;
+  --z-modal: 2000;
+  --z-toast: 3000;
+  --z-tooltip: 4000;
+}
+
+[data-theme='light'] {
+  --color-bg: #F8FAFC;
+  --color-bg-secondary: #F1F5F9;
+  --color-bg-tertiary: #E2E8F0;
+  --color-surface: rgba(0, 0, 0, 0.03);
+  --color-surface-hover: rgba(0, 0, 0, 0.06);
+  --color-card-bg: #FFFFFF;
+  --color-card-border: rgba(0, 245, 160, 0.2);
+  
+  --color-text: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748B;
+  --color-border: rgba(0, 0, 0, 0.1);
+
+  /* Shadcn UI RGB variables */
+  --background: 248 250 252;
+  --foreground: 15 23 42;
+  --card: 255 255 255;
+  --border-rgb: 0 0 0;
+  --primary-rgb: 0 245 160;
+  --primary-foreground: 0 0 0;
+  --secondary: 241 245 249;
+  --secondary-foreground: 71 85 105;
+  --muted: 226 232 240;
+  --muted-foreground: 100 116 139;
+
+  --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.8));
+  --gradient-hero-glow: radial-gradient(circle at 50% 0%, rgba(0, 245, 160, 0.1) 0%, rgba(248, 250, 252, 0) 70%);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 20px rgba(0, 245, 160, 0.2);
+}

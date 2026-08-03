@@ -1,0 +1,375 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Plus, ArrowUpRight } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+import ScanModal from '../../components/scanner/ScanModal';
+import OnboardingModal from '../../components/auth/OnboardingModal';
+import { useAuth } from '../../contexts/AuthContext';
+import { db } from '../../services/database.service';
+import { scannerService } from '../../services/scanner.service';
+import { supabase } from '../../config/supabase';
+
+const INITIAL_SITES = [
+  {
+    id: 'novaflow-ai.vercel.app',
+    name: 'novaflow-ai.vercel.app',
+    issues: '24 issues · 5 critical',
+    lastScan: '2 hours ago',
+    score: 72,
+    trend: '+6',
+    trendUp: true
+  },
+  {
+    id: 'lumen-studio.com',
+    name: 'lumen-studio.com',
+    issues: '6 issues · 0 critical',
+    lastScan: 'yesterday',
+    score: 91,
+    trend: '+2',
+    trendUp: true
+  },
+  {
+    id: 'packr-app.io',
+    name: 'packr-app.io',
+    issues: '31 issues · 7 critical',
+    lastScan: 'yesterday',
+    score: 64,
+    trend: '-4',
+    trendUp: false
+  },
+  {
+    id: 'hearth-cafe.site',
+    name: 'hearth-cafe.site',
+    issues: '9 issues · 1 critical',
+    lastScan: '3 days ago',
+    score: 85,
+    trend: '+11',
+    trendUp: true
+  },
+  {
+    id: 'quill-notes.dev',
+    name: 'quill-notes.dev',
+    issues: '14 issues · 2 critical',
+    lastScan: '5 days ago',
+    score: 78,
+    trend: '—',
+    trendUp: true
+  }
+];
+
+export default function DashboardPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [quickScanUrl, setQuickScanUrl] = useState('');
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+  const [targetScanUrl, setTargetScanUrl] = useState('');
+  const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [newSiteUrl, setNewSiteUrl] = useState('');
+  const [sites, setSites] = useState([]);
+  const [totalScansCount, setTotalScansCount] = useState(38);
+
+  useEffect(() => {
+    const saved = db.getCollection('monitored_sites');
+    if (saved && saved.length > 0) {
+      setSites(saved);
+    } else {
+      setSites(INITIAL_SITES);
+      INITIAL_SITES.forEach(s => db.create('monitored_sites', s));
+    }
+
+    scannerService.getUserScans().then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        setTotalScansCount(Math.max(38, res.data.length));
+      }
+    }).catch(console.error);
+    
+    // Check if user is newly registered and needs onboarding
+    const checkOnboarding = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      // If no data is found, they haven't onboarded yet
+      if (!data) {
+        setShowOnboarding(true);
+      }
+    };
+    
+    checkOnboarding();
+  }, [user]);
+
+  // Score trend chart data matching screenshot #2 (58, 61, 60, 66, 69, 68, 72)
+  const trendData = [
+    { scan: 'Scan 1', score: 58 },
+    { scan: 'Scan 2', score: 61 },
+    { scan: 'Scan 3', score: 60 },
+    { scan: 'Scan 4', score: 66 },
+    { scan: 'Scan 5', score: 69 },
+    { scan: 'Scan 6', score: 68 },
+    { scan: 'Scan 7', score: 72 },
+  ];
+
+  const avgScore = sites.length > 0
+    ? Math.round(sites.reduce((acc, s) => acc + s.score, 0) / sites.length)
+    : 78;
+
+  const handleQuickScan = (e) => {
+    e?.preventDefault();
+    const finalUrl = quickScanUrl.trim() || 'https://your-site.com';
+    setTargetScanUrl(finalUrl);
+    setIsScanModalOpen(true);
+  };
+
+  const handleAddSite = (e) => {
+    e.preventDefault();
+    if (!newSiteUrl.trim()) return;
+    const cleanDomain = newSiteUrl.replace(/https?:\/\//, '').replace(/\/.*$/, '');
+    const newEntry = {
+      id: cleanDomain,
+      name: cleanDomain,
+      issues: '12 issues · 2 critical',
+      lastScan: 'just now',
+      score: 82,
+      trend: '+4',
+      trendUp: true
+    };
+    const updated = [newEntry, ...sites];
+    setSites(updated);
+    db.create('monitored_sites', newEntry);
+    setNewSiteUrl('');
+    setIsAddSiteModalOpen(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 flex flex-col font-sans">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 space-y-8">
+        
+        {/* TOP DASHBOARD HEADER - Exact match from Screenshot #2 */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Your sites</h1>
+            <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">
+              {sites.length} monitored {sites.length === 1 ? 'site' : 'sites'} · re-scanned weekly
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => alert('All system alerts are nominal.')}
+              className="px-4 py-2 rounded-xl bg-white dark:bg-[#0D1527] hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 flex items-center gap-2 transition-colors shadow-sm dark:shadow-none"
+            >
+              <Bell size={14} className="text-[#00F5A0]" /> Alerts
+            </button>
+          </div>
+        </div>
+
+        {/* 4 METRIC STAT CARDS - Exact match from Screenshot #2 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-2">
+            <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Average score</div>
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">{avgScore}</div>
+            <div className="text-xs text-slate-500 dark:text-gray-500">across {sites.length} sites</div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-2">
+            <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Critical issues</div>
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">15</div>
+            <div className="text-xs text-slate-500 dark:text-gray-500">needs attention</div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-2">
+            <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Scans this month</div>
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">{totalScansCount}</div>
+            <div className="text-xs text-slate-500 dark:text-gray-500">of unlimited</div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-2">
+            <div className="text-xs text-slate-600 dark:text-gray-400 font-medium">Best performer</div>
+            <div className="text-3xl font-extrabold text-[#00F5A0] font-mono">91</div>
+            <div className="text-xs text-slate-600 dark:text-gray-400 truncate">lumen-studio.com</div>
+          </div>
+
+        </div>
+
+        {/* MAIN LAYOUT: LEFT SITES LIST | RIGHT SCORE TREND & QUICK SCAN */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          {/* LEFT COLUMN: Monitored Websites (2 columns span) */}
+          <div className="lg:col-span-2 p-6 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Monitored websites</h2>
+              
+              <button
+                onClick={() => setIsAddSiteModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(0,245,160,0.2)]"
+              >
+                <Plus size={14} /> Add site
+              </button>
+            </div>
+
+            {/* Site List Cards */}
+            <div className="space-y-3">
+              {sites.map((site) => (
+                <div
+                  key={site.id}
+                  className="p-4 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center transition-colors shrink-0">
+                      <span className="text-sm font-bold text-[#00F5A0]">{site.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-[#00F5A0] dark:group-hover:text-[#00F5A0] transition-colors">
+                        {site.name}
+                      </h3>
+                      <p className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">
+                        {site.issues} · {site.lastScan}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 justify-between sm:justify-end">
+                    <div className="text-right">
+                      <span className={`text-xl font-extrabold font-mono ${
+                        site.score >= 80 ? 'text-[#00F5A0]' : site.score >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {site.score}
+                      </span>
+                      <span className={`text-xs ${site.trendUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'} font-mono ml-1.5`}>
+                        {site.trend}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => navigate(`/report/${site.id}`)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-white/5 hover:bg-slate-300 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition-colors"
+                    >
+                      Report <ArrowUpRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+
+          {/* RIGHT COLUMN: SCORE TREND & QUICK SCAN */}
+          <div className="space-y-6">
+            
+            {/* SCORE TREND CARD */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Score trend</h3>
+                <p className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">novaflow-ai.vercel.app · 7 scans</p>
+              </div>
+
+              {/* Chart */}
+              <div className="h-44 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendData}>
+                    <XAxis dataKey="scan" hide />
+                    <YAxis domain={[50, 80]} hide />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#080C14', borderColor: '#00F5A0', borderRadius: '8px', fontSize: '12px' }} 
+                      itemStyle={{ color: '#00F5A0' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="score" 
+                      stroke="#00F5A0" 
+                      strokeWidth={3}
+                      dot={{ fill: '#00F5A0', r: 4 }}
+                      activeDot={{ r: 6, fill: '#ffffff', stroke: '#00F5A0' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* QUICK SCAN WIDGET */}
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none space-y-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Quick scan</h3>
+                <p className="text-xs text-slate-600 dark:text-gray-400 mt-0.5">Audit a one-off URL without adding it.</p>
+              </div>
+
+              <form onSubmit={handleQuickScan} className="space-y-3">
+                <input
+                  type="text"
+                  value={quickScanUrl}
+                  onChange={(e) => setQuickScanUrl(e.target.value)}
+                  placeholder="https://your-site.com"
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 font-mono focus:outline-none focus:border-[#00F5A0]/50"
+                />
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-xs transition-all shadow-[0_0_15px_rgba(0,245,160,0.3)] hover:shadow-[0_0_25px_rgba(0,245,160,0.5)] active:scale-95"
+                >
+                  Run audit
+                </button>
+              </form>
+            </div>
+
+          </div>
+
+        </div>
+
+      </main>
+      {/* Add Site Modal */}
+      {isAddSiteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-md bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/10 rounded-2xl p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Add Website to Monitor</h3>
+            <p className="text-xs text-slate-600 dark:text-gray-400">SiteProof will automatically audit and track weekly quality metrics.</p>
+
+            <form onSubmit={handleAddSite} className="space-y-4">
+              <input
+                type="text"
+                value={newSiteUrl}
+                onChange={(e) => setNewSiteUrl(e.target.value)}
+                placeholder="https://my-awesome-app.com"
+                required
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#00F5A0]"
+              />
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddSiteModalOpen(false)}
+                  className="px-4 py-2 text-xs text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-[#00F5A0] text-slate-950 font-bold text-xs shadow-[0_0_15px_rgba(0,245,160,0.3)]"
+                >
+                  Start Monitoring
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Scanner Modal */}
+      <ScanModal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        targetUrl={targetScanUrl}
+      />
+
+      {/* Onboarding Modal */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
+    </div>
+  );
+}
