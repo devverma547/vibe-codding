@@ -6,7 +6,7 @@ import {
   ArrowRight, Zap, Shield, Search, Eye, Palette, 
   Brain, Activity, FileText, CheckCircle2, 
   Smartphone, FileCode, Sparkles, Scale, 
-  Layers3, ChevronDown, ExternalLink
+  Layers3, ChevronDown, ExternalLink, GitBranch
 } from 'lucide-react';
 import InteractiveDemoVideo from '../../components/landing/InteractiveDemoVideo';
 import ScanModal from '../../components/scanner/ScanModal';
@@ -20,8 +20,10 @@ import KineticTypography from '../../components/landing/KineticTypography';
 
 export default function LandingPage() {
   const [urlInput, setUrlInput] = useState('');
+  const [githubRepoInput, setGithubRepoInput] = useState('');
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [scanTargetUrl, setScanTargetUrl] = useState('');
+  const [scanTargetGithubRepo, setScanTargetGithubRepo] = useState('');
 
   React.useEffect(() => {
     if (window.location.hash === '#scan') {
@@ -34,19 +36,19 @@ export default function LandingPage() {
   const [activePersona, setActivePersona] = useState('vibe-coders');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
-  const handleStartScan = (e, customUrl = null) => {
+  const handleStartScan = (e, customUrl = null, customGithubRepo = null) => {
     e?.preventDefault();
     const target = customUrl || urlInput.trim() || 'https://your-site.com';
+    const targetRepo = customGithubRepo !== null ? customGithubRepo : githubRepoInput.trim();
     setScanTargetUrl(target);
+    setScanTargetGithubRepo(targetRepo);
     setIsScanModalOpen(true);
   };
 
-
-
   const sampleSites = [
-    { label: 'novaflow-ai.vercel.app', url: 'https://novaflow-ai.vercel.app' },
-    { label: 'demo-store.com', url: 'https://demo-store.com' },
-    { label: 'linear.app', url: 'https://linear.app' }
+    { label: 'novaflow-ai.vercel.app', url: 'https://novaflow-ai.vercel.app', repo: 'https://github.com/novaflow/novaflow-app' },
+    { label: 'demo-store.com', url: 'https://demo-store.com', repo: 'https://github.com/demo-store/storefront' },
+    { label: 'linear.app', url: 'https://linear.app', repo: 'https://github.com/linear/linear-frontend' }
   ];
 
   const modules = [
@@ -240,7 +242,7 @@ export default function LandingPage() {
               SiteProof doesn't just inspect your site — we deliver complete audit reports and generate exact AI prompts so you can copy-paste them directly into Cursor, Bolt, or ChatGPT to rebuild or fix your site automatically.
             </motion.p>
 
-            {/* URL Input Form */}
+            {/* URL & GitHub Repo Input Form */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -249,10 +251,10 @@ export default function LandingPage() {
             >
               <form 
                 onSubmit={handleStartScan}
-                className="max-w-xl mx-auto flex flex-col sm:flex-row items-center gap-3 p-2 rounded-2xl bg-white dark:bg-[#0F1726]/90 border border-slate-300 dark:border-white/10 shadow-[0_0_40px_rgba(0,245,160,0.1)] focus-within:border-[#00F5A0]/50 transition-all backdrop-blur-sm"
+                className="max-w-xl mx-auto flex flex-col gap-3 p-3 rounded-2xl bg-white dark:bg-[#0F1726]/90 border border-slate-300 dark:border-white/10 shadow-[0_0_40px_rgba(0,245,160,0.1)] focus-within:border-[#00F5A0]/50 transition-all backdrop-blur-sm"
               >
-                <div className="flex items-center gap-3 flex-1 px-3 w-full">
-                  <span className="text-slate-400 dark:text-gray-500 font-mono text-sm">https://</span>
+                <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#080C14]/50 border border-slate-200 dark:border-white/5">
+                  <span className="text-slate-400 dark:text-gray-500 font-mono text-sm font-semibold">https://</span>
                   <input
                     id="scan-input"
                     type="text"
@@ -263,19 +265,30 @@ export default function LandingPage() {
                   />
                 </div>
 
+                <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#080C14]/50 border border-slate-200 dark:border-white/5">
+                  <GitBranch size={16} className="text-[#00F5A0] shrink-0" />
+                  <input
+                    type="text"
+                    value={githubRepoInput}
+                    onChange={(e) => setGithubRepoInput(e.target.value)}
+                    placeholder="https://github.com/user/repository (optional)"
+                    className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none font-mono"
+                  />
+                </div>
+
                 <motion.button
                   type="submit"
-                  whileHover={{ scale: 1.03, boxShadow: '0 0 35px rgba(0,245,160,0.5)' }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,245,160,0.3)] flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                  whileHover={{ scale: 1.02, boxShadow: '0 0 35px rgba(0,245,160,0.5)' }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full py-3 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,245,160,0.3)] flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  Scan Now <ArrowRight size={16} />
+                  Scan Website & GitHub Repo <ArrowRight size={16} />
                 </motion.button>
               </form>
 
               {/* Sample Sites Chips */}
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-600 dark:text-gray-400">
-                <span className="font-medium text-slate-500 dark:text-gray-500">Or try sample URL:</span>
+                <span className="font-medium text-slate-500 dark:text-gray-500">Or try sample URL + Repo:</span>
                 {sampleSites.map((site, index) => (
                   <motion.button
                     key={index}
@@ -283,7 +296,8 @@ export default function LandingPage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={(e) => {
                       setUrlInput(site.label);
-                      handleStartScan(e, site.url);
+                      setGithubRepoInput(site.repo);
+                      handleStartScan(e, site.url, site.repo);
                     }}
                     className="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:text-[#00F5A0] font-mono text-[11px] transition-all flex items-center gap-1 cursor-pointer"
                   >
@@ -671,6 +685,7 @@ export default function LandingPage() {
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}
         targetUrl={scanTargetUrl}
+        githubRepo={scanTargetGithubRepo}
       />
     </div>
   );

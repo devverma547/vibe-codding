@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Zap, ShieldCheck, ArrowRight, Activity } from 'lucide-react';
+import { Zap, ShieldCheck, ArrowRight, Activity, GitBranch } from 'lucide-react';
 
 export default function HeroLiveQuickScan({ onFullScan }) {
   const [testUrl, setTestUrl] = useState('https://novaflow-ai.vercel.app');
+  const [githubRepo, setGithubRepo] = useState('https://github.com/novaflow/novaflow-app');
   const [isQuickChecking, setIsQuickChecking] = useState(false);
   const [quickResult, setQuickResult] = useState(null);
 
@@ -18,6 +19,7 @@ export default function HeroLiveQuickScan({ onFullScan }) {
       setIsQuickChecking(false);
       setQuickResult({
         domain: testUrl.replace(/https?:\/\//, '').split('/')[0],
+        githubRepo: githubRepo.trim(),
         overallScore: 94,
         sslStatus: 'Valid (TLS 1.3)',
         cspStatus: 'Active',
@@ -42,19 +44,34 @@ export default function HeroLiveQuickScan({ onFullScan }) {
         </span>
       </div>
 
-      <form onSubmit={handleRunQuickCheck} className="flex gap-2">
-        <input
-          type="url"
-          required
-          value={testUrl}
-          onChange={(e) => setTestUrl(e.target.value)}
-          placeholder="https://your-website.com"
-          className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-xs sm:text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#00F5A0]"
-        />
+      <form onSubmit={handleRunQuickCheck} className="space-y-3">
+        <div className="space-y-2">
+          <div className="relative">
+            <input
+              type="url"
+              required
+              value={testUrl}
+              onChange={(e) => setTestUrl(e.target.value)}
+              placeholder="https://your-website.com"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-xs sm:text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#00F5A0]"
+            />
+          </div>
+          <div className="relative flex items-center">
+            <GitBranch className="absolute left-3 w-4 h-4 text-slate-400 dark:text-gray-500" />
+            <input
+              type="text"
+              value={githubRepo}
+              onChange={(e) => setGithubRepo(e.target.value)}
+              placeholder="GitHub Repo: https://github.com/user/repo (optional)"
+              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100/70 dark:bg-[#080C14]/70 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-gray-200 font-mono focus:outline-none focus:border-[#00F5A0]"
+            />
+          </div>
+        </div>
+
         <button
           type="submit"
           disabled={isQuickChecking}
-          className="px-4 py-2.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          className="w-full py-2.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
         >
           {isQuickChecking ? (
             <>
@@ -62,7 +79,7 @@ export default function HeroLiveQuickScan({ onFullScan }) {
             </>
           ) : (
             <>
-              Quick Test <Zap size={14} />
+              Quick Test Website + GitHub Repo <Zap size={14} />
             </>
           )}
         </button>
@@ -71,7 +88,7 @@ export default function HeroLiveQuickScan({ onFullScan }) {
       {/* QUICK RESULT BOX */}
       {quickResult && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-3 animate-fadeIn">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <ShieldCheck className="text-[#00F5A0]" size={18} />
               <span className="text-xs font-bold text-slate-900 dark:text-white font-mono">{quickResult.domain}</span>
@@ -80,6 +97,13 @@ export default function HeroLiveQuickScan({ onFullScan }) {
               Score: {quickResult.overallScore}/100
             </div>
           </div>
+
+          {quickResult.githubRepo && (
+            <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">
+              <GitBranch size={12} className="text-[#00F5A0]" />
+              <span className="truncate">{quickResult.githubRepo}</span>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-2 text-[11px] font-mono text-slate-600 dark:text-gray-300">
             <div className="p-2 rounded-lg bg-slate-200/50 dark:bg-white/5">
@@ -97,7 +121,7 @@ export default function HeroLiveQuickScan({ onFullScan }) {
           </div>
 
           <button
-            onClick={() => onFullScan?.(testUrl)}
+            onClick={() => onFullScan?.(testUrl, githubRepo)}
             className="w-full py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold text-xs hover:bg-slate-800 dark:hover:bg-gray-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
           >
             Launch Full 12-Module Deep Audit Report <ArrowRight size={14} />

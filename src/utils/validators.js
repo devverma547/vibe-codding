@@ -40,3 +40,42 @@ export const sanitizeUrl = (url) => {
   return trimmed;
 };
 
+export const isValidGithubRepo = (repo) => {
+  if (!repo || typeof repo !== 'string' || !repo.trim()) {
+    return { valid: false, error: 'GitHub repository URL is required' };
+  }
+  const trimmed = repo.trim();
+  const repoRegex = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)(?:\/.*)?$/;
+  const match = trimmed.match(repoRegex);
+  if (match) {
+    return {
+      valid: true,
+      error: null,
+      owner: match[1],
+      repo: match[2],
+      url: `https://github.com/${match[1]}/${match[2]}`
+    };
+  }
+  const shortRegex = /^([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)$/;
+  const shortMatch = trimmed.match(shortRegex);
+  if (shortMatch) {
+    return {
+      valid: true,
+      error: null,
+      owner: shortMatch[1],
+      repo: shortMatch[2],
+      url: `https://github.com/${shortMatch[1]}/${shortMatch[2]}`
+    };
+  }
+  return { valid: false, error: 'Please enter a valid GitHub repository (e.g. https://github.com/user/repo)' };
+};
+
+export const sanitizeGithubRepo = (repo) => {
+  if (!repo) return '';
+  const trimmed = repo.trim();
+  if (!trimmed) return '';
+  const res = isValidGithubRepo(trimmed);
+  return res.valid ? res.url : trimmed;
+};
+
+

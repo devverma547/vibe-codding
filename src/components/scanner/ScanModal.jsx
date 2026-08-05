@@ -14,7 +14,7 @@ const steps = [
   { title: 'Synthesizing 13-Module Health Score', detail: 'Generating prioritized AI action plan and score breakdown...' },
 ];
 
-export default function ScanModal({ isOpen, onClose, targetUrl }) {
+export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -31,10 +31,14 @@ export default function ScanModal({ isOpen, onClose, targetUrl }) {
     }
 
     const cleanUrl = targetUrl || 'https://your-site.com';
-    setLogs([`[0.00s] Initializing SiteProof AI Engine v2.6 for ${cleanUrl}`]);
+    const initialLogs = [`[0.00s] Initializing SiteProof AI Engine v2.6 for ${cleanUrl}`];
+    if (githubRepo) {
+      initialLogs.push(`[0.05s] Linked Source Repo: ${githubRepo}`);
+    }
+    setLogs(initialLogs);
 
     // Trigger real scan storage in database
-    scannerService.analyzeSite(cleanUrl).then((res) => {
+    scannerService.analyzeSite(cleanUrl, githubRepo).then((res) => {
       if (res.success && res.data) {
         setGeneratedReportId(res.data.report?.id || res.data.scan?.id || cleanUrl);
       }
@@ -62,7 +66,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl }) {
     }, 450);
 
     return () => clearInterval(interval);
-  }, [isOpen, targetUrl]);
+  }, [isOpen, targetUrl, githubRepo]);
 
   if (!isOpen) return null;
 
@@ -84,8 +88,13 @@ export default function ScanModal({ isOpen, onClose, targetUrl }) {
               <ShieldCheck size={18} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-base font-bold text-white flex items-center gap-2 flex-wrap">
                 Scanning Site <span className="text-[#00F5A0] font-mono text-sm font-normal">{displayUrl}</span>
+                {githubRepo && (
+                  <span className="text-xs bg-white/10 text-gray-300 px-2 py-0.5 rounded-full font-mono font-normal flex items-center gap-1">
+                    <Terminal size={10} className="text-[#00F5A0]" /> {githubRepo.replace('https://github.com/', '')}
+                  </span>
+                )}
               </h3>
               <p className="text-xs text-gray-400">Running full-spectrum 13-module quality audit</p>
             </div>
@@ -164,7 +173,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl }) {
               onClick={() => {
                 onClose();
                 const targetId = generatedReportId || displayUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-                navigate(`/report/${targetId}`);
+                navigate(`/report/${targetId}`, { state: { githubRepo } });
               }}
               className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2 ${
                 isFinished

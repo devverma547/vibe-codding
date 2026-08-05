@@ -14,11 +14,14 @@ export default function DashboardPage() {
   const { user } = useAuth();
   
   const [quickScanUrl, setQuickScanUrl] = useState('');
+  const [quickScanGithubRepo, setQuickScanGithubRepo] = useState('');
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [targetScanUrl, setTargetScanUrl] = useState('');
+  const [targetScanGithubRepo, setTargetScanGithubRepo] = useState('');
   const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [newSiteUrl, setNewSiteUrl] = useState('');
+  const [newSiteGithubRepo, setNewSiteGithubRepo] = useState('');
   
   const [sites, setSites] = useState([]);
   const [stats, setStats] = useState({ totalScans: 0, avgScore: 0, criticalIssues: 0 });
@@ -104,6 +107,7 @@ export default function DashboardPage() {
     e?.preventDefault();
     if (!quickScanUrl.trim()) return;
     setTargetScanUrl(quickScanUrl.trim());
+    setTargetScanGithubRepo(quickScanGithubRepo.trim());
     setIsScanModalOpen(true);
   };
 
@@ -111,7 +115,7 @@ export default function DashboardPage() {
     e.preventDefault();
     if (!newSiteUrl.trim() || !user) return;
     
-    const newSite = await websiteService.create(user.id, newSiteUrl);
+    const newSite = await websiteService.create(user.id, newSiteUrl, newSiteGithubRepo);
     if (newSite) {
       const newEntry = {
         id: newSite.id,
@@ -126,6 +130,7 @@ export default function DashboardPage() {
     }
     
     setNewSiteUrl('');
+    setNewSiteGithubRepo('');
     setIsAddSiteModalOpen(false);
   };
 
@@ -304,10 +309,17 @@ export default function DashboardPage() {
                   placeholder="https://your-site.com"
                   className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 font-mono focus:outline-none focus:border-[#00F5A0]/50"
                 />
+                <input
+                  type="text"
+                  value={quickScanGithubRepo}
+                  onChange={(e) => setQuickScanGithubRepo(e.target.value)}
+                  placeholder="https://github.com/user/repo (optional)"
+                  className="w-full px-4 py-2 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-gray-200 placeholder-slate-400 dark:placeholder-gray-500 font-mono focus:outline-none focus:border-[#00F5A0]/50"
+                />
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-xs transition-all shadow-[0_0_15px_rgba(0,245,160,0.3)] hover:shadow-[0_0_25px_rgba(0,245,160,0.5)] active:scale-95"
+                  className="w-full py-2.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-xs transition-all shadow-[0_0_15px_rgba(0,245,160,0.3)] hover:shadow-[0_0_25px_rgba(0,245,160,0.5)] active:scale-95 cursor-pointer"
                 >
                   Run audit
                 </button>
@@ -328,14 +340,27 @@ export default function DashboardPage() {
             <p className="text-xs text-slate-600 dark:text-gray-400">SiteProof will automatically audit and track weekly quality metrics.</p>
 
             <form onSubmit={handleAddSite} className="space-y-4">
-              <input
-                type="text"
-                value={newSiteUrl}
-                onChange={(e) => setNewSiteUrl(e.target.value)}
-                placeholder="https://my-awesome-app.com"
-                required
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#00F5A0]"
-              />
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">Website Link</label>
+                <input
+                  type="text"
+                  value={newSiteUrl}
+                  onChange={(e) => setNewSiteUrl(e.target.value)}
+                  placeholder="https://my-awesome-app.com"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#00F5A0]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">GitHub Repository (Optional)</label>
+                <input
+                  type="text"
+                  value={newSiteGithubRepo}
+                  onChange={(e) => setNewSiteGithubRepo(e.target.value)}
+                  placeholder="https://github.com/user/repository"
+                  className="w-full px-4 py-2 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#00F5A0]"
+                />
+              </div>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
@@ -361,6 +386,7 @@ export default function DashboardPage() {
         isOpen={isScanModalOpen}
         onClose={() => setIsScanModalOpen(false)}
         targetUrl={targetScanUrl}
+        githubRepo={targetScanGithubRepo}
       />
 
       <OnboardingModal

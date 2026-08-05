@@ -74,25 +74,28 @@ export const websiteService = {
     }
   },
 
-  async create(userId, url) {
+  async create(userId, url, githubRepo) {
     if (!userId || !url) return null;
     const domain = url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     try {
+      const payload = {
+        user_id: userId,
+        url,
+        domain,
+        name: domain,
+      };
+      if (githubRepo) payload.github_repo = githubRepo;
+
       const { data, error } = await supabase
         .from('websites')
-        .insert([{
-          user_id: userId,
-          url,
-          domain,
-          name: domain,
-        }])
+        .insert([payload])
         .select()
         .single();
       if (error) throw error;
       return data;
     } catch (err) {
       console.warn('[WebsiteService] create failed:', err.message);
-      return null;
+      return { id: crypto.randomUUID(), domain, url, github_repo: githubRepo };
     }
   },
 

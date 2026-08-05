@@ -377,8 +377,8 @@ describe('Auth Flow & State Propagation Harness', () => {
         expect(screen.getByText('Completing Authentication')).toBeInTheDocument();
       });
 
-      act(() => {
-        vi.advanceTimersByTime(4000);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(4000);
       });
 
       await waitFor(() => {

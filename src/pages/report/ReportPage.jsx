@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, RefreshCw, Printer, AlertTriangle, CheckCircle2, 
-  XCircle, ArrowUpRight, Copy, Check, Sparkles, X, Code, Activity
+  XCircle, ArrowUpRight, Copy, Check, Sparkles, X, Code, Activity, GitBranch
 } from 'lucide-react';
 import { scannerService } from '../../services/scanner.service';
 
@@ -19,8 +19,10 @@ const loadingSteps = [
 
 export default function ReportPage() {
   const { reportId } = useParams();
+  const location = useLocation();
   const [_reportData, setReportData] = useState(null);
   const [domainName, setDomainName] = useState(reportId || 'novaflow-ai.vercel.app');
+  const [githubRepoUrl, setGithubRepoUrl] = useState(location.state?.githubRepo || '');
   const [targetScore, setTargetScore] = useState(72);
 
   const [activeFixModal, setActiveFixModal] = useState(null);
@@ -38,6 +40,9 @@ export default function ReportPage() {
         setReportData(res.data.report);
         const clean = res.data.report.url?.replace(/^https?:\/\//, '').replace(/\/.*$/, '') || reportId;
         setDomainName(clean);
+        if (res.data.report.githubRepo) {
+          setGithubRepoUrl(res.data.report.githubRepo);
+        }
         if (typeof res.data.report.overallScore === 'number') {
           setTargetScore(res.data.report.overallScore);
         }
@@ -398,9 +403,19 @@ For HSTS, set the max-age to 2 years and include subdomains.`,
           
           {/* Top Bar inside Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-white/5">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className="w-2.5 h-2.5 rounded-full bg-[#00F5A0] animate-pulse" />
               <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-mono">{domainName}</h1>
+              {githubRepoUrl && (
+                <a 
+                  href={githubRepoUrl.startsWith('http') ? githubRepoUrl : `https://${githubRepoUrl}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/10 text-xs font-mono text-[#00F5A0] hover:underline"
+                >
+                  <GitBranch size={12} /> {githubRepoUrl.replace('https://github.com/', '')}
+                </a>
+              )}
               <span className="text-xs text-slate-500 dark:text-gray-400">Scanned on {scanDate}</span>
             </div>
 

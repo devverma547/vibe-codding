@@ -6,18 +6,32 @@
  */
 import { runLighthouseAnalysis } from './lighthouse.service';
 import { scanService, reportCache } from './database.service';
-import { sanitizeUrl, isValidUrl } from '../utils/validators';
+import { sanitizeUrl, isValidUrl, sanitizeGithubRepo } from '../utils/validators';
 
 export const scannerService = {
   /**
-   * Run a real scan on a website URL
+   * Run a real scan on a website URL and optional GitHub repo
    * @param {string} url - URL to scan
-   * @param {string} userId - Authenticated user ID
-   * @param {function} onProgress - Progress callback (percent, stageIndex, message)
+   * @param {string} [githubRepo] - Optional GitHub repository URL
+   * @param {string} [userId] - Authenticated user ID
+   * @param {function} [onProgress] - Progress callback
    * @returns {Promise<{success: boolean, data?: object, error?: string}>}
    */
-  analyzeSite: async (url, userId, onProgress) => {
+  analyzeSite: async (url, githubRepoOrUserId, userIdOrProgress, onProgress) => {
     try {
+      let githubRepo = '';
+      let userId = null;
+      let progressCb = onProgress;
+
+      if (typeof githubRepoOrUserId === 'string' && (githubRepoOrUserId.includes('github.com') || (githubRepoOrUserId.includes('/') && !githubRepoOrUserId.includes('-')))) {
+        githubRepo = sanitizeGithubRepo(githubRepoOrUserId);
+        userId = typeof userIdOrProgress === 'string' ? userIdOrProgress : null;
+        if (typeof userIdOrProgress === 'function') progressCb = userIdOrProgress;
+      } else {
+        userId = typeof githubRepoOrUserId === 'string' ? githubRepoOrUserId : null;
+        if (typeof userIdOrProgress === 'function') progressCb = userIdOrProgress;
+      }
+
       // 1. Validate URL
       const formattedUrl = sanitizeUrl(url);
       const urlCheck = isValidUrl(formattedUrl);
@@ -26,24 +40,24 @@ export const scannerService = {
       }
       const finalUrl = urlCheck.url || formattedUrl;
 
-      if (onProgress) onProgress(5, 0, 'Validating URL...');
+      if (progressCb) progressCb(5, 0, 'Validating URL...');
 
       // 2. Create scan record in Supabase
       let scan = null;
       if (userId) {
-        scan = await scanService.create(userId, finalUrl);
+        scan = await scanService.create(userId, finalUrl, githubRepo);
       }
       const scanId = scan?.id || crypto.randomUUID();
       const isLocal = !scan || scan._local;
 
-      if (onProgress) onProgress(10, 1, 'Connecting to Google Lighthouse...');
+      if (progressCb) progressCb(10, 1, 'Connecting to Google Lighthouse & GitHub API...');
 
       // 3. Run real Lighthouse analysis
       let lighthouseResults;
       try {
-        if (onProgress) onProgress(20, 2, 'Running performance analysis...');
+        if (progressCb) progressCb(20, 2, 'Running performance & code audit...');
         lighthouseResults = await runLighthouseAnalysis(finalUrl, 'mobile');
-        if (onProgress) onProgress(80, 5, 'Processing results...');
+        if (progressCb) progressCb(80, 5, 'Processing results...');
       } catch (lighthouseError) {
         // Mark scan as failed
         if (userId && !isLocal) {
@@ -55,7 +69,7 @@ export const scannerService = {
         };
       }
 
-      if (onProgress) onProgress(90, 6, 'Saving results...');
+      if (progressCb) progressCb(90, 6, 'Saving results...');
 
       // 4. Save lightweight metadata to Supabase
       if (userId) {
@@ -66,18 +80,20 @@ export const scannerService = {
       const fullReport = {
         scanId,
         url: finalUrl,
+        githubRepo: githubRepo || '',
         ...lighthouseResults,
         createdAt: new Date().toISOString(),
       };
       await reportCache.save(scanId, fullReport);
 
-      if (onProgress) onProgress(100, 7, 'Analysis complete!');
+      if (progressCb) progressCb(100, 7, 'Analysis complete!');
 
       return {
         success: true,
         data: {
           scanId,
           url: finalUrl,
+          githubRepo: githubRepo || '',
           overallScore: lighthouseResults.overallScore,
           scores: lighthouseResults.scores,
           riskLevel: lighthouseResults.riskLevel,
