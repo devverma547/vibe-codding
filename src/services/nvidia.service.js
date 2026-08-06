@@ -106,6 +106,18 @@ function buildClientFallbackReport(pageSpeedData, url) {
     }
   }
 
+  if (!auditBreakdown.some((m) => ['codequality', 'code-quality'].includes(String(m.id || m.category || '').toLowerCase().replace(/\s+/g, '')))) {
+    auditBreakdown.push({
+      id: 'code-quality',
+      category: 'Code Quality',
+      title: 'Code Quality',
+      score: '0.0',
+      description: 'No source code review was available. Link a GitHub repository and configure AI analysis for code quality checks.',
+      source: 'github-code-review',
+      checks: [],
+    });
+  }
+
   // Build fix prompts from recommendations
   const recs = pageSpeedData.recommendations || [];
   const fixPrompts = recs.map((rec) => ({
@@ -114,7 +126,7 @@ function buildClientFallbackReport(pageSpeedData, url) {
     title: rec.title || 'Fix Issue',
     detail: rec.detail || '',
     impact: rec.impact || '+5 pts',
-    prompt: `Act as an expert web developer. My website ${domain} needs: ${rec.title}. ${rec.detail}. Provide the exact code changes needed.`,
+    prompt: `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${rec.title}\nDetails: ${rec.detail}\n\nTask: Provide the EXACT file paths, locate the problematic code, and provide the exact replacement code to resolve this issue. Do not ask the user to fix it; provide the full code rewrite.`,
     code: '',
   }));
 
@@ -128,7 +140,7 @@ function buildClientFallbackReport(pageSpeedData, url) {
         title: issue.title,
         detail: issue.description,
         impact: '+5 pts',
-        prompt: `Act as an expert web developer. My website ${domain} has this issue:\n\nIssue: ${issue.title}\nCategory: ${issue.category}\nSeverity: ${issue.severity}\n${issue.displayValue ? `Current: ${issue.displayValue}` : ''}\n\nPlease provide the exact code fix.`,
+        prompt: `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${issue.title}\nCategory: ${issue.category}\nSeverity: ${issue.severity}\nCurrent Value: ${issue.displayValue || 'N/A'}\n\nTask: Provide the EXACT file paths, locate the problematic code, and provide the exact replacement code to resolve this issue. Do not ask the user to fix it; provide the full code rewrite.`,
         code: '',
       });
     }

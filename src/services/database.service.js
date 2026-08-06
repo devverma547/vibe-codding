@@ -27,6 +27,7 @@ export const reportCache = {
       if (error) throw error;
     } catch (e) {
       console.warn('[ReportCache] Failed to save to Supabase:', e.message);
+      saveReportLocally(scanId, reportData);
     }
   },
 
@@ -42,7 +43,7 @@ export const reportCache = {
       const text = await data.text();
       return JSON.parse(text);
     } catch {
-      return null;
+      return getLocalReport(scanId);
     }
   },
 
@@ -51,8 +52,39 @@ export const reportCache = {
       const fileName = `${scanId}.json`;
       await supabase.storage.from('reports').remove([fileName]);
     } catch { /* ignore */ }
+    removeLocalReport(scanId);
   }
 };
+
+function getLocalReportKey(scanId) {
+  return `siteproof-report-${scanId}`;
+}
+
+function saveReportLocally(scanId, reportData) {
+  if (typeof localStorage === 'undefined' || !scanId) return;
+  try {
+    localStorage.setItem(getLocalReportKey(scanId), JSON.stringify(reportData));
+  } catch (err) {
+    console.warn('[ReportCache] Failed to save local report:', err.message);
+  }
+}
+
+function getLocalReport(scanId) {
+  if (typeof localStorage === 'undefined' || !scanId) return null;
+  try {
+    const report = localStorage.getItem(getLocalReportKey(scanId));
+    return report ? JSON.parse(report) : null;
+  } catch {
+    return null;
+  }
+}
+
+function removeLocalReport(scanId) {
+  if (typeof localStorage === 'undefined' || !scanId) return;
+  try {
+    localStorage.removeItem(getLocalReportKey(scanId));
+  } catch { /* ignore */ }
+}
 
 // ================================================================
 // WEBSITE SERVICE — Supabase
@@ -86,11 +118,19 @@ export const websiteService = {
       };
       if (githubRepo) payload.github_repo = githubRepo;
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('websites')
         .insert([payload])
         .select()
         .single();
+      if (error && githubRepo && String(error.message || '').includes('github_repo')) {
+        delete payload.github_repo;
+        ({ data, error } = await supabase
+          .from('websites')
+          .insert([payload])
+          .select()
+          .single());
+      }
       if (error) throw error;
       return data;
     } catch (err) {

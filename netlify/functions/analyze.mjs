@@ -440,13 +440,13 @@ Produce a JSON object with this exact structure.
 
 ⚠️ CRITICAL RULES — FOLLOW EXACTLY:
 1. ALWAYS produce exactly 6 auditBreakdown entries, one for each category: ${categories.join(', ')}.
-2. DO NOT invent, fabricate, or guess data for categories without real measurements (e.g., do NOT generate UI/UX, Mobile, Content, Legal, Technical Health, Business, or Infrastructure modules).
-3. Every check label MUST reference a specific metric, file path, element, or audit result from the scan data above. If you cannot cite real data, do not include the check.
-4. The "source" field on each auditBreakdown entry must be "google-pagespeed" for the 5 PageSpeed categories, or "github-code-review" for Code Quality.
-5. If NO GitHub source code was provided above, still include the Code Quality entry but set score to 0, description to "No source code was provided for review. Link a GitHub repository to enable code quality analysis.", and leave checks as an empty array [].
+2. DO NOT invent, fabricate, or guess data for categories without real measurements.
+3. Every check label MUST reference a specific metric, file path, element, or audit result from the scan data above.
+4. SCORES MUST BE REAL: Your module scores (0.0 to 10.0) MUST be mathematically derived from the PageSpeed scores provided (e.g., PageSpeed score 85 = module score 8.5). Do NOT invent random numbers. Your \`healthScore\` must be the exact average of the provided PageSpeed scores.
+5. FIX PROMPTS MUST BE AUTOMATED: Your \`fixPrompts\` -> \`prompt\` field MUST be written as a direct, comprehensive instruction for an AI Coding Assistant (like Cursor, Bolt, or v0). It must include the EXACT file paths, the EXACT code to replace, and the EXACT new code to insert so the AI assistant can implement the fix autonomously when the user pastes it. Do NOT just tell the user to fix it.
 
 {
-  "healthScore": <number 0-100>,
+  "healthScore": <exact average of PageSpeed category scores (0-100)>,
   "summary": "<2-3 sentence executive summary referencing actual scores>",
   "verdict": "<one of: 'Production Ready', 'Needs Minor Fixes', 'Needs Work Before Launch', 'Critical Issues Found'>",
   "projectedScore": <number 0-100, score after implementing your fixes>,
@@ -455,7 +455,7 @@ Produce a JSON object with this exact structure.
       "id": "<unique slug>",
       "category": "<${categories.join('|')}>",
       "title": "<module title>",
-      "score": <number 0.0 to 10.0>,
+      "score": <exact PageSpeed score divided by 10 (0.0 to 10.0)>,
       "description": "<1-2 sentence finding citing specific data from the scan above>",
       "source": "<google-pagespeed|github-code-review>",
       "checks": [
@@ -470,8 +470,8 @@ Produce a JSON object with this exact structure.
       "title": "<short action title>",
       "detail": "<why this matters, citing real data>",
       "impact": "<e.g. '+8 pts'>",
-      "prompt": "<THE EXACT PROMPT the user should paste into Cursor/v0/Bolt.new/Lovable to fix this issue. Be specific: mention file paths, class names, elements, and exact changes needed. ONLY reference issues that appear in the scan data above.>",
-      "code": "<a brief example code snippet showing the fix>"
+      "prompt": "<A highly detailed, autonomous instruction prompt for Cursor/Bolt/v0. Include exact file paths, the specific code to find, and the exact code to replace it with. The user will copy-paste this into their AI IDE to fix the issue automatically.>",
+      "code": "<a brief example code snippet showing the exact fix>"
     }
   ],
   "techStack": ["<technology 1>", "<technology 2>"],
@@ -501,7 +501,7 @@ function formatIssuesForPrompt(issues) {
   if (issues.length === 0) return 'No issues detected.';
   return issues
     .slice(0, 20)
-    .map((i) => `- [${i.severity.toUpperCase()}] ${i.title}${i.displayValue ? ` (${i.displayValue})` : ''} — ${i.category}`)
+    .map((i) => `- [${String(i.severity || 'warn').toUpperCase()}] ${i.title || i.id}${i.displayValue ? ` (${i.displayValue})` : ''} - ${i.category || 'unknown'}`)
     .join('\n');
 }
 
@@ -510,90 +510,46 @@ function formatIssuesForPrompt(issues) {
 // ================================================================
 
 // Allowed categories — only those backed by real data
-const VALID_CATEGORIES = new Set([
-  'performance', 'seo', 'security', 'accessibility', 'best practices', 'best-practices',
-  'bestpractices', 'code quality', 'code-quality', 'codequality',
-]);
+const CATEGORY_CONFIGS = [
+  { id: 'performance', category: 'Performance', title: 'Performance Analysis', scoreKey: 'performance', source: 'google-pagespeed' },
+  { id: 'seo', category: 'SEO', title: 'SEO Analysis', scoreKey: 'seo', source: 'google-pagespeed' },
+  { id: 'security', category: 'Security', title: 'Security Analysis', scoreKey: 'security', source: 'google-pagespeed' },
+  { id: 'accessibility', category: 'Accessibility', title: 'Accessibility Analysis', scoreKey: 'accessibility', source: 'google-pagespeed' },
+  { id: 'best-practices', category: 'Best Practices', title: 'Best Practices', scoreKey: 'bestPractices', source: 'google-pagespeed' },
+  { id: 'code-quality', category: 'Code Quality', title: 'Code Quality', scoreKey: null, source: 'github-code-review' },
+];
 
 function normalizeAIResponse(aiData, pageSpeedData, url) {
-  // Filter out any hallucinated categories that don't have real backing data
-  const filteredBreakdown = (aiData.auditBreakdown || []).filter((item) => {
-    const cat = (item.category || '').toLowerCase().replace(/\s+/g, '-');
-    return VALID_CATEGORIES.has(cat) || VALID_CATEGORIES.has(cat.replace(/-/g, ''));
-  });
+  const realHealthScore = getPageSpeedAverage(pageSpeedData);
+  const auditBreakdown = buildCompleteAuditBreakdown(aiData.auditBreakdown || [], pageSpeedData);
+  const fixPrompts = (aiData.fixPrompts || []).map((p) => ({
+    priority: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(p.priority) ? p.priority : 'MEDIUM',
+    time: p.time || '10 mins',
+    title: p.title || 'Fix Issue',
+    detail: p.detail || '',
+    impact: p.impact || '+5 pts',
+    prompt: p.prompt || buildAutomatedFixPrompt(extractDomain(url), p.title || 'Fix Issue', p.detail || ''),
+    code: p.code || '',
+  }));
 
   return {
-    healthScore: clamp(aiData.healthScore ?? pageSpeedData.overallScore ?? 50, 0, 100),
+    healthScore: realHealthScore,
     summary: aiData.summary || pageSpeedData.summary || `Analysis of ${extractDomain(url)} complete.`,
-    verdict: aiData.verdict || deriveVerdict(aiData.healthScore ?? 50),
-    projectedScore: clamp(aiData.projectedScore ?? Math.min((aiData.healthScore ?? 50) + 17, 98), 0, 100),
-    auditBreakdown: filteredBreakdown.map((item) => ({
-      id: item.id || item.category?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
-      category: item.category || 'General',
-      title: item.title || item.category || 'Audit Module',
-      score: typeof item.score === 'number' ? item.score.toFixed(1) : '5.0',
-      description: item.description || '',
-      source: item.source || 'google-pagespeed',
-      checks: (item.checks || []).map((c) => ({
-        status: ['pass', 'fail', 'warn'].includes(c.status) ? c.status : 'warn',
-        label: c.label || 'Check',
-      })),
-    })),
-    fixPrompts: (aiData.fixPrompts || []).map((p) => ({
-      priority: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(p.priority) ? p.priority : 'MEDIUM',
-      time: p.time || '10 mins',
-      title: p.title || 'Fix Issue',
-      detail: p.detail || '',
-      impact: p.impact || '+5 pts',
-      prompt: p.prompt || '',
-      code: p.code || '',
-    })),
+    verdict: aiData.verdict || deriveVerdict(realHealthScore),
+    projectedScore: clamp(aiData.projectedScore ?? Math.min(realHealthScore + 17, 98), 0, 100),
+    auditBreakdown,
+    fixPrompts,
     techStack: aiData.techStack || pageSpeedData.techStack || [],
-    stats: aiData.stats || { passedChecks: 0, failedChecks: 0, warningChecks: 0, criticalIssues: 0 },
+    stats: aiData.stats || buildStats(auditBreakdown, pageSpeedData),
     source: 'nvidia-ai',
   };
 }
 
 function buildFallbackReport(pageSpeedData, url) {
   const domain = extractDomain(url);
-  const scores = pageSpeedData.scores || {};
-  const overall = pageSpeedData.overallScore || 50;
+  const overall = getPageSpeedAverage(pageSpeedData);
   const issues = pageSpeedData.issues || [];
-  const modules = pageSpeedData.modules || [];
-
-  const auditBreakdown = modules.map((m) => ({
-    id: m.id,
-    category: m.title || m.id,
-    title: m.title,
-    score: m.score,
-    description: m.description,
-    source: 'google-pagespeed',
-    checks: m.checks || [],
-  }));
-
-  if (auditBreakdown.length === 0) {
-    const defaults = [
-      { id: 'security', title: 'Security Analysis', key: 'security' },
-      { id: 'performance', title: 'Performance Analysis', key: 'performance' },
-      { id: 'seo', title: 'SEO Analysis', key: 'seo' },
-      { id: 'accessibility', title: 'Accessibility Analysis', key: 'accessibility' },
-      { id: 'bestPractices', title: 'Best Practices', key: 'bestPractices' },
-    ];
-    for (const d of defaults) {
-      const score = scores[d.key] ?? 50;
-      const modIssues = issues.filter((i) => i.category === d.id);
-      auditBreakdown.push({
-        id: d.id, category: d.title, title: d.title,
-        score: (score / 10).toFixed(1),
-        description: modIssues.length > 0 ? `Found ${modIssues.length} issues.` : `Score: ${score}/100`,
-        source: 'google-pagespeed',
-        checks: modIssues.slice(0, 5).map((i) => ({
-          status: i.severity === 'critical' || i.severity === 'high' ? 'fail' : i.severity === 'medium' ? 'warn' : 'pass',
-          label: `${i.title}${i.displayValue ? ` (${i.displayValue})` : ''}`,
-        })),
-      });
-    }
-  }
+  const auditBreakdown = buildCompleteAuditBreakdown([], pageSpeedData);
 
   const recs = pageSpeedData.recommendations || [];
   const fixPrompts = recs.map((rec) => ({
@@ -602,7 +558,7 @@ function buildFallbackReport(pageSpeedData, url) {
     title: rec.title || 'Fix Issue',
     detail: rec.detail || '',
     impact: rec.impact || '+5 pts',
-    prompt: `Act as an expert web developer. My website ${domain} needs: ${rec.title}. ${rec.detail}. Please provide exact code fixes.`,
+    prompt: buildAutomatedFixPrompt(domain, rec.title, rec.detail),
     code: '',
   }));
 
@@ -612,15 +568,13 @@ function buildFallbackReport(pageSpeedData, url) {
         priority: issue.severity === 'critical' ? 'CRITICAL' : 'HIGH',
         time: '15 mins', title: issue.title, detail: issue.description,
         impact: '+5 pts',
-        prompt: `Act as an expert web developer. My website ${domain} has: ${issue.title} (${issue.category}, ${issue.severity}). ${issue.description}. ${issue.displayValue || ''}. Provide exact code fix.`,
+        prompt: buildAutomatedFixPrompt(domain, issue.title, `${issue.category}, ${issue.severity}. ${issue.description}. ${issue.displayValue || ''}`),
         code: '',
       });
     }
   }
 
-  const passedChecks = auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'pass').length, 0);
-  const failedChecks = auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'fail').length, 0);
-  const warningChecks = auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'warn').length, 0);
+  const stats = buildStats(auditBreakdown, pageSpeedData);
 
   return {
     healthScore: overall,
@@ -629,9 +583,107 @@ function buildFallbackReport(pageSpeedData, url) {
     projectedScore: Math.min(overall + 17, 98),
     auditBreakdown, fixPrompts,
     techStack: pageSpeedData.techStack || ['Standard Web'],
-    stats: { passedChecks, failedChecks, warningChecks, criticalIssues: issues.filter((i) => i.severity === 'critical').length },
+    stats,
     source: 'pagespeed-fallback',
   };
+}
+
+function buildCompleteAuditBreakdown(items, pageSpeedData) {
+  const scores = pageSpeedData.scores || {};
+  const modules = pageSpeedData.modules || [];
+  const issues = pageSpeedData.issues || [];
+
+  return CATEGORY_CONFIGS.map((cfg) => {
+    const aiItem = findMatchingBreakdownItem(items, cfg.id);
+    const module = findMatchingBreakdownItem(modules, cfg.id);
+    const score = cfg.scoreKey
+      ? (Number.isFinite(scores[cfg.scoreKey]) ? scores[cfg.scoreKey] / 10 : 0)
+      : clampScore(aiItem?.score ?? module?.score ?? 0);
+    const checks = normalizeChecks(aiItem?.checks || module?.checks || buildIssueChecks(issues, cfg.id));
+
+    return {
+      id: cfg.id,
+      category: cfg.category,
+      title: aiItem?.title || module?.title || cfg.title,
+      score: score.toFixed(1),
+      description: aiItem?.description || module?.description || buildModuleDescription(cfg, scores, issues),
+      source: cfg.source,
+      checks,
+    };
+  });
+}
+
+function findMatchingBreakdownItem(items, categoryId) {
+  const wanted = canonicalCategory(categoryId);
+  return (items || []).find((item) => {
+    const id = canonicalCategory(item.id);
+    const category = canonicalCategory(item.category);
+    const title = canonicalCategory(item.title);
+    return id === wanted || category === wanted || title.includes(wanted);
+  });
+}
+
+function canonicalCategory(value = '') {
+  const key = String(value).toLowerCase().replace(/[^a-z0-9]+/g, '');
+  if (key === 'bestpractices') return 'bestpractices';
+  if (key === 'codequality') return 'codequality';
+  return key;
+}
+
+function normalizeChecks(checks) {
+  return (checks || []).slice(0, 5).map((check) => ({
+    status: ['pass', 'fail', 'warn'].includes(check.status) ? check.status : 'warn',
+    label: check.label || check.title || 'Check result unavailable',
+  }));
+}
+
+function buildIssueChecks(issues, categoryId) {
+  const wanted = canonicalCategory(categoryId);
+  const matches = issues.filter((issue) => canonicalCategory(issue.category) === wanted).slice(0, 5);
+  if (matches.length === 0) {
+    return [{ status: 'pass', label: 'No failed PageSpeed audits reported for this category' }];
+  }
+  return matches.map((issue) => ({
+    status: issue.severity === 'critical' || issue.severity === 'high' ? 'fail' : 'warn',
+    label: `${issue.title || issue.id}${issue.displayValue ? ` (${issue.displayValue})` : ''}`,
+  }));
+}
+
+function buildModuleDescription(cfg, scores, issues) {
+  if (!cfg.scoreKey) {
+    return 'No source code review was available. Link a GitHub repository and configure AI analysis for code quality checks.';
+  }
+  const score = scores[cfg.scoreKey] ?? 0;
+  const count = issues.filter((issue) => canonicalCategory(issue.category) === canonicalCategory(cfg.id)).length;
+  return count > 0 ? `Found ${count} PageSpeed issue(s). Score: ${score}/100.` : `Score: ${score}/100 from Google PageSpeed.`;
+}
+
+function buildStats(auditBreakdown, pageSpeedData) {
+  return {
+    passedChecks: auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'pass').length, 0),
+    failedChecks: auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'fail').length, 0),
+    warningChecks: auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'warn').length, 0),
+    criticalIssues: (pageSpeedData.issues || []).filter((i) => i.severity === 'critical').length,
+  };
+}
+
+function getPageSpeedAverage(pageSpeedData) {
+  const scores = pageSpeedData.scores || {};
+  const values = ['performance', 'seo', 'accessibility', 'bestPractices', 'security']
+    .map((key) => scores[key])
+    .filter((score) => Number.isFinite(score));
+
+  if (values.length === 0) return clamp(pageSpeedData.overallScore ?? 50, 0, 100);
+  return Math.round(values.reduce((sum, score) => sum + score, 0) / values.length);
+}
+
+function clampScore(value) {
+  const number = typeof value === 'string' ? parseFloat(value) : value;
+  return clamp(Number.isFinite(number) ? number : 0, 0, 10);
+}
+
+function buildAutomatedFixPrompt(domain, title = 'Fix Issue', detail = '') {
+  return `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${title}\nDetails: ${detail}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`;
 }
 
 // ================================================================

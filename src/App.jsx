@@ -59,7 +59,7 @@ function App() {
                       {/* Protected Routes */}
                       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
                       <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-                      <Route path="/report/:reportId" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
+                      <Route path="/report/:reportId" element={<ReportPage />} />
 
                       {/* Error Routes */}
                       <Route path="/404" element={<NotFoundPage />} />

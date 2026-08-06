@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Bell, Plus, ArrowUpRight } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import ScanModal from '../../components/scanner/ScanModal';
@@ -10,7 +9,6 @@ import { scannerService } from '../../services/scanner.service';
 import { supabase } from '../../config/supabase';
 
 export default function DashboardPage() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   
   const [quickScanUrl, setQuickScanUrl] = useState('');
@@ -43,6 +41,7 @@ export default function DashboardPage() {
         const mappedSites = websites.map(w => ({
           id: w.id,
           name: w.name || w.domain,
+          url: w.url,
           issues: `${w.scan_count || 0} scans`,
           lastScan: w.last_scanned_at ? new Date(w.last_scanned_at).toLocaleDateString() : 'never',
           score: w.last_score || 0,
@@ -243,10 +242,14 @@ export default function DashboardPage() {
                       </div>
 
                       <button
-                        onClick={() => navigate(`/report/${site.id}`)}
+                        onClick={() => {
+                          setTargetScanUrl(site.url);
+                          setTargetScanGithubRepo('');
+                          setIsScanModalOpen(true);
+                        }}
                         className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-white/5 hover:bg-slate-300 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition-colors"
                       >
-                        Report <ArrowUpRight size={14} />
+                        Scan <ArrowUpRight size={14} />
                       </button>
                     </div>
                   </div>
@@ -396,4 +399,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

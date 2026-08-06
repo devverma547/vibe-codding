@@ -24,7 +24,14 @@ const HistoryPage = () => {
         setLoading(true);
         const res = await scannerService.getUserScans(user?.id);
         const list = res.success ? (res.data || []) : (Array.isArray(res) ? res : []);
-        setScans(list);
+        // Map snake_case properties from Supabase to expected camelCase
+        const mappedList = list.map(scan => ({
+          ...scan,
+          score: typeof scan.score === 'number' ? scan.score : (scan.overallScore ?? scan.overall_score ?? 0),
+          createdAt: scan.createdAt || scan.created_at,
+          date: scan.date || scan.createdAt || scan.created_at
+        }));
+        setScans(mappedList);
       } catch (error) {
         console.error('Error fetching scan history:', error);
       } finally {
@@ -37,7 +44,7 @@ const HistoryPage = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this scan report?')) {
-      await scannerService.deleteScan(id);
+      await scannerService.deleteScan(id, user?.id);
       setScans(scans.filter(scan => scan.id !== id));
     }
   };
@@ -45,7 +52,7 @@ const HistoryPage = () => {
   const filteredAndSortedScans = scans
     .filter(scan => {
       const urlStr = scan.url || '';
-      const scoreNum = typeof scan.score === 'number' ? scan.score : (scan.overallScore || 0);
+      const scoreNum = typeof scan.score === 'number' ? scan.score : (scan.overallScore ?? scan.overall_score ?? 0);
       const matchesSearch = urlStr.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'All' || 
                            (statusFilter === 'Completed' && scoreNum > 0) ||
@@ -53,10 +60,10 @@ const HistoryPage = () => {
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.date || a.createdAt || Date.now());
-      const dateB = new Date(b.date || b.createdAt || Date.now());
-      const scoreA = typeof a.score === 'number' ? a.score : (a.overallScore || 0);
-      const scoreB = typeof b.score === 'number' ? b.score : (b.overallScore || 0);
+      const dateA = new Date(a.date || a.createdAt || a.created_at || Date.now());
+      const dateB = new Date(b.date || b.createdAt || b.created_at || Date.now());
+      const scoreA = typeof a.score === 'number' ? a.score : (a.overallScore ?? a.overall_score ?? 0);
+      const scoreB = typeof b.score === 'number' ? b.score : (b.overallScore ?? b.overall_score ?? 0);
 
       if (sortBy === 'Newest') return dateB - dateA;
       if (sortBy === 'Oldest') return dateA - dateB;
@@ -66,8 +73,8 @@ const HistoryPage = () => {
 
   const stats = {
     total: scans.length,
-    average: scans.length ? Math.round(scans.reduce((acc, curr) => acc + (typeof curr.score === 'number' ? curr.score : (curr.overallScore || 0)), 0) / scans.length) : 0,
-    latest: scans.length ? Math.max(...scans.map(s => new Date(s.date || s.createdAt || Date.now()).getTime())) : null
+    average: scans.length ? Math.round(scans.reduce((acc, curr) => acc + (typeof curr.score === 'number' ? curr.score : (curr.overallScore ?? curr.overall_score ?? 0)), 0) / scans.length) : 0,
+    latest: scans.length ? Math.max(...scans.map(s => new Date(s.date || s.createdAt || s.created_at || Date.now()).getTime())) : null
   };
 
   return (

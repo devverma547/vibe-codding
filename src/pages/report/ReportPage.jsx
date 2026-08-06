@@ -8,6 +8,7 @@ import {
   Info, Globe, Database
 } from 'lucide-react';
 import { scannerService } from '../../services/scanner.service';
+import { useAuth } from '../../contexts/AuthContext';
 
 const loadingSteps = [
   "Initializing SiteProof audit engine...",
@@ -84,6 +85,7 @@ function getVitalColor(status) {
 export default function ReportPage() {
   const { reportId } = useParams();
   const location = useLocation();
+  const { user } = useAuth();
   const [reportData, setReportData] = useState(null);
   const [domainName, setDomainName] = useState(reportId || 'example.com');
   const [githubRepoUrl, setGithubRepoUrl] = useState(location.state?.githubRepo || '');
@@ -184,7 +186,7 @@ export default function ReportPage() {
     
     // Re-run the scan
     const url = reportData?.url || `https://${domainName}`;
-    scannerService.analyzeSite(url, githubRepoUrl).then((res) => {
+    scannerService.analyzeSite(url, githubRepoUrl, user?.id || null).then((res) => {
       if (res.success && res.data) {
         // Re-fetch the full report
         scannerService.getReportByScanId(res.data.scanId).then((reportRes) => {
@@ -238,6 +240,22 @@ export default function ReportPage() {
 
   // Score color
   const scoreColor = targetScore >= 80 ? '#00F5A0' : targetScore >= 60 ? '#F5A623' : '#FF4D4D';
+
+  if (!isInitialLoading && !isRescanning && !reportData) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans flex flex-col relative">
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20">
+          <div className="text-center py-20 space-y-4">
+            <ShieldCheck size={48} className="mx-auto text-slate-300 dark:text-gray-600" />
+            <h2 className="text-xl font-bold text-slate-500 dark:text-gray-400">Report Not Found</h2>
+            <p className="text-sm text-slate-400 dark:text-gray-500">
+              This scan report could not be loaded. It may have expired or the scan ID is invalid.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans flex flex-col relative">

@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS public.websites (
   url TEXT NOT NULL,
   domain TEXT NOT NULL,
   name TEXT DEFAULT '',
+  github_repo TEXT DEFAULT '',
   last_score INTEGER,
   last_scanned_at TIMESTAMPTZ,
   scan_count INTEGER DEFAULT 0,
@@ -112,6 +113,66 @@ CREATE POLICY "Users can update own scans"
   ON public.scans FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own scans"
   ON public.scans FOR DELETE USING (auth.uid() = user_id);
+
+-- ==================
+-- STORAGE: reports
+-- ==================
+-- Full audit reports are stored as JSON in a private bucket.
+-- The app also keeps a browser localStorage fallback for anonymous scans.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('reports', 'reports', false, 1048576, ARRAY['application/json'])
+ON CONFLICT (id) DO UPDATE SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Users can upload own reports'
+  ) THEN
+    CREATE POLICY "Users can upload own reports"
+      ON storage.objects FOR INSERT TO authenticated
+      WITH CHECK (bucket_id = 'reports');
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Users can view own reports'
+  ) THEN
+    CREATE POLICY "Users can view own reports"
+      ON storage.objects FOR SELECT TO authenticated
+      USING (bucket_id = 'reports' AND owner_id = (SELECT auth.uid()::text));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Users can update own reports'
+  ) THEN
+    CREATE POLICY "Users can update own reports"
+      ON storage.objects FOR UPDATE TO authenticated
+      USING (bucket_id = 'reports' AND owner_id = (SELECT auth.uid()::text))
+      WITH CHECK (bucket_id = 'reports' AND owner_id = (SELECT auth.uid()::text));
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Users can delete own reports'
+  ) THEN
+    CREATE POLICY "Users can delete own reports"
+      ON storage.objects FOR DELETE TO authenticated
+      USING (bucket_id = 'reports' AND owner_id = (SELECT auth.uid()::text));
+  END IF;
+END $$;
 
 -- ==================
 -- AUTO-CREATE PROFILE ON SIGNUP

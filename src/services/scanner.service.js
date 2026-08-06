@@ -18,17 +18,16 @@
  *     9. Return enriched report data
  */
 import { runLighthouseAnalysis } from './lighthouse.service';
-import { parseGithubUrl } from './github.service';
 import { analyzeWithAI } from './nvidia.service';
 import { scanService, reportCache } from './database.service';
-import { sanitizeUrl, isValidUrl, sanitizeGithubRepo } from '../utils/validators';
+import { sanitizeUrl, isValidUrl, sanitizeGithubRepo, isValidGithubRepo } from '../utils/validators';
 
 export const scannerService = {
   /**
    * Run a full AI-powered scan on a website URL and optional GitHub repo
    * @param {string} url - URL to scan
-   * @param {string} [githubRepoOrUserId] - GitHub repo URL or user ID
-   * @param {string} [userIdOrProgress] - User ID or progress callback
+   * @param {string} [githubRepoOrUserId] - GitHub repo URL, owner/repo, or legacy user ID
+   * @param {string|function} [userIdOrProgress] - User ID or progress callback
    * @param {function} [onProgress] - Progress callback(percent, step, message)
    * @returns {Promise<{success: boolean, data?: object, error?: string}>}
    */
@@ -38,7 +37,9 @@ export const scannerService = {
       let userId = null;
       let progressCb = onProgress;
 
-      if (typeof githubRepoOrUserId === 'string' && (githubRepoOrUserId.includes('github.com') || (githubRepoOrUserId.includes('/') && !githubRepoOrUserId.includes('-')))) {
+      if (typeof githubRepoOrUserId === 'function') {
+        progressCb = githubRepoOrUserId;
+      } else if (typeof githubRepoOrUserId === 'string' && isValidGithubRepo(githubRepoOrUserId).valid) {
         githubRepo = sanitizeGithubRepo(githubRepoOrUserId);
         userId = typeof userIdOrProgress === 'string' ? userIdOrProgress : null;
         if (typeof userIdOrProgress === 'function') progressCb = userIdOrProgress;
@@ -60,7 +61,7 @@ export const scannerService = {
       // 2. Create scan record in Supabase
       let scan = null;
       if (userId) {
-        scan = await scanService.create(userId, finalUrl, githubRepo);
+        scan = await scanService.create(userId, finalUrl);
       }
       const scanId = scan?.id || crypto.randomUUID();
       const isLocal = !scan || scan._local;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShieldCheck, CheckCircle2, Loader2, Sparkles, ArrowRight, X, Terminal, GitBranch } from 'lucide-react';
 import { scannerService } from '../../services/scanner.service';
+import { useAuth } from '../../contexts/AuthContext';
 
 const steps = [
   { title: 'Connecting to Host & Parsing DOM', detail: 'Fetching headers, TLS certificates, and DNS records...' },
@@ -17,6 +18,7 @@ const steps = [
 
 export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [progress, setProgress] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [logs, setLogs] = useState([]);
@@ -52,7 +54,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
 
     // Trigger the REAL scan pipeline
     scannerService
-      .analyzeSite(cleanUrl, githubRepo, null, (pct, step, msg) => {
+      .analyzeSite(cleanUrl, githubRepo, user?.id || null, (pct, step, msg) => {
         // Real progress callback from the scanner
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
         setProgress(pct);
@@ -110,7 +112,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
     }, 3000); // Slower intervals since real scans take ~15-30s
 
     return () => clearInterval(stepInterval);
-  }, [isOpen, targetUrl, githubRepo]);
+  }, [isOpen, targetUrl, githubRepo, user?.id]);
 
   if (!isOpen) return null;
 
@@ -197,7 +199,6 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
             {steps.map((step, idx) => {
               const isDone = idx < currentStepIndex;
               const isActive = idx === currentStepIndex && !isFinished && !hasError;
-              const isPending = idx > currentStepIndex && !isFinished;
               const isAllDone = isFinished;
 
               return (
