@@ -7,6 +7,7 @@
  *
  * The function also handles GitHub code extraction server-side.
  */
+import { calculateProjectedScore, normalizeActionPlanImpacts } from '../utils/reportScoring';
 
 /**
  * Send PageSpeed data + GitHub repo URL to the secure Netlify Function
@@ -120,31 +121,34 @@ function buildClientFallbackReport(pageSpeedData, url) {
 
   // Build fix prompts from recommendations
   const recs = pageSpeedData.recommendations || [];
-  const fixPrompts = recs.map((rec) => ({
+  const rawFixPrompts = recs.map((rec) => ({
     priority: rec.priority || 'MEDIUM',
     time: rec.time || '10 mins',
     title: rec.title || 'Fix Issue',
     detail: rec.detail || '',
     impact: rec.impact || '+5 pts',
-    prompt: `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${rec.title}\nDetails: ${rec.detail}\n\nTask: Provide the EXACT file paths, locate the problematic code, and provide the exact replacement code to resolve this issue. Do not ask the user to fix it; provide the full code rewrite.`,
+    prompt: `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${rec.title}\nDetails: ${rec.detail}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`,
     code: '',
   }));
 
   // Add prompts from critical issues if we don't have enough
-  if (fixPrompts.length < 3) {
+  if (rawFixPrompts.length < 3) {
     const critical = issues.filter((i) => i.severity === 'critical' || i.severity === 'high');
-    for (const issue of critical.slice(0, 5 - fixPrompts.length)) {
-      fixPrompts.push({
+    for (const issue of critical.slice(0, 5 - rawFixPrompts.length)) {
+      rawFixPrompts.push({
         priority: issue.severity === 'critical' ? 'CRITICAL' : 'HIGH',
         time: '15 mins',
         title: issue.title,
         detail: issue.description,
         impact: '+5 pts',
-        prompt: `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${issue.title}\nCategory: ${issue.category}\nSeverity: ${issue.severity}\nCurrent Value: ${issue.displayValue || 'N/A'}\n\nTask: Provide the EXACT file paths, locate the problematic code, and provide the exact replacement code to resolve this issue. Do not ask the user to fix it; provide the full code rewrite.`,
+        prompt: `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${issue.title}\nCategory: ${issue.category}\nSeverity: ${issue.severity}\nCurrent Value: ${issue.displayValue || 'N/A'}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`,
         code: '',
       });
     }
   }
+
+  const projectedScore = calculateProjectedScore(overall, rawFixPrompts);
+  const fixPrompts = normalizeActionPlanImpacts(rawFixPrompts, overall, projectedScore);
 
   const passedChecks = auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'pass').length, 0);
   const failedChecks = auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'fail').length, 0);
@@ -154,7 +158,7 @@ function buildClientFallbackReport(pageSpeedData, url) {
     healthScore: overall,
     summary: pageSpeedData.summary || `Analysis of ${domain} complete. Score: ${overall}/100.`,
     verdict: overall >= 90 ? 'Production Ready' : overall >= 75 ? 'Needs Minor Fixes' : overall >= 50 ? 'Needs Work Before Launch' : 'Critical Issues Found',
-    projectedScore: Math.min(overall + 17, 98),
+    projectedScore,
     auditBreakdown,
     fixPrompts,
     techStack: pageSpeedData.techStack || ['Standard Web'],

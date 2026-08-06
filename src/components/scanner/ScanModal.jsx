@@ -47,7 +47,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
       initialLogs.push(`[0.05s] Linked Source Repo: ${githubRepo}`);
       initialLogs.push(`[0.06s] GitHub code extraction will run in parallel with PageSpeed`);
     }
-    initialLogs.push(`[0.10s] AI Model: NVIDIA nemotron-3-super-120b-a12b`);
+    initialLogs.push(`[0.10s] AI analysis will use the configured server model if available`);
     setLogs(initialLogs);
 
     const startTime = Date.now();
@@ -77,16 +77,16 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
           setCurrentStepIndex(steps.length - 1);
           setLogs((prev) => [
             ...prev,
-            `[${elapsed}s] ✅ Audit complete! Health Score: ${res.data.overallScore}/100`,
+            `[${elapsed}s] Audit complete. Health Score: ${res.data.overallScore}/100`,
             res.data.aiReport?.source === 'nvidia-ai'
-              ? `[${elapsed}s] 🤖 AI analysis powered by NVIDIA NIM`
-              : `[${elapsed}s] 📊 Report generated from PageSpeed data`,
+              ? `[${elapsed}s] AI analysis powered by NVIDIA NIM${res.data.aiReport.model ? ` (${res.data.aiReport.model})` : ''}`
+              : `[${elapsed}s] Report generated from PageSpeed data`,
           ]);
         } else {
           setScanError(res.error || 'Scan failed');
           setLogs((prev) => [
             ...prev,
-            `[${elapsed}s] ❌ Error: ${res.error || 'Unknown error'}`,
+            `[${elapsed}s] Error: ${res.error || 'Unknown error'}`,
           ]);
         }
       })
@@ -95,7 +95,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
         setScanError(err.message);
         setLogs((prev) => [
           ...prev,
-          `[${elapsed}s] ❌ Fatal error: ${err.message}`,
+          `[${elapsed}s] Fatal error: ${err.message}`,
         ]);
       });
 

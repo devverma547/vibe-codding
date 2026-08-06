@@ -331,7 +331,7 @@ You MUST respond with ONLY valid JSON. No markdown, no code fences, no explanati
     return buildFallbackReport(pageSpeedData, url);
   }
 
-  return normalizeAIResponse(parsed, pageSpeedData, url);
+  return normalizeAIResponse(parsed, pageSpeedData, url, model);
 }
 
 /**
@@ -443,7 +443,8 @@ Produce a JSON object with this exact structure.
 2. DO NOT invent, fabricate, or guess data for categories without real measurements.
 3. Every check label MUST reference a specific metric, file path, element, or audit result from the scan data above.
 4. SCORES MUST BE REAL: Your module scores (0.0 to 10.0) MUST be mathematically derived from the PageSpeed scores provided (e.g., PageSpeed score 85 = module score 8.5). Do NOT invent random numbers. Your \`healthScore\` must be the exact average of the provided PageSpeed scores.
-5. FIX PROMPTS MUST BE AUTOMATED: Your \`fixPrompts\` -> \`prompt\` field MUST be written as a direct, comprehensive instruction for an AI Coding Assistant (like Cursor, Bolt, or v0). It must include the EXACT file paths, the EXACT code to replace, and the EXACT new code to insert so the AI assistant can implement the fix autonomously when the user pastes it. Do NOT just tell the user to fix it.
+5. FIX PROMPTS MUST BE AUTOMATED: Your \`fixPrompts\` -> \`prompt\` field MUST be written as a direct instruction for an AI Coding Assistant (like Cursor, Bolt, or v0). If GitHub source code is provided, include exact file paths and replacement guidance from that source. If no GitHub source code is provided, do NOT invent file paths; tell the coding assistant to inspect the repository first, then apply the fix.
+6. IMPACT NUMBERS ARE ESTIMATES: \`impact\` values must use wording like "Est. +5 pts". They are not guaranteed additive points. \`projectedScore\` must never exceed 98 or 100, whichever is lower, and must be capped by the current score gap.
 
 {
   "healthScore": <exact average of PageSpeed category scores (0-100)>,
@@ -469,8 +470,8 @@ Produce a JSON object with this exact structure.
       "time": "<estimated fix time, e.g. '15 mins'>",
       "title": "<short action title>",
       "detail": "<why this matters, citing real data>",
-      "impact": "<e.g. '+8 pts'>",
-      "prompt": "<A highly detailed, autonomous instruction prompt for Cursor/Bolt/v0. Include exact file paths, the specific code to find, and the exact code to replace it with. The user will copy-paste this into their AI IDE to fix the issue automatically.>",
+      "impact": "<e.g. 'Est. +8 pts'>",
+      "prompt": "<A direct instruction prompt for Cursor/Bolt/v0. Use exact file paths only when source code was provided. Otherwise, instruct the coding assistant to inspect the repository first, identify the files, then apply the fix.>",
       "code": "<a brief example code snippet showing the exact fix>"
     }
   ],
@@ -519,10 +520,10 @@ const CATEGORY_CONFIGS = [
   { id: 'code-quality', category: 'Code Quality', title: 'Code Quality', scoreKey: null, source: 'github-code-review' },
 ];
 
-function normalizeAIResponse(aiData, pageSpeedData, url) {
+function normalizeAIResponse(aiData, pageSpeedData, url, model = '') {
   const realHealthScore = getPageSpeedAverage(pageSpeedData);
   const auditBreakdown = buildCompleteAuditBreakdown(aiData.auditBreakdown || [], pageSpeedData);
-  const fixPrompts = (aiData.fixPrompts || []).map((p) => ({
+  const rawFixPrompts = (aiData.fixPrompts || []).map((p) => ({
     priority: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(p.priority) ? p.priority : 'MEDIUM',
     time: p.time || '10 mins',
     title: p.title || 'Fix Issue',
@@ -531,17 +532,20 @@ function normalizeAIResponse(aiData, pageSpeedData, url) {
     prompt: p.prompt || buildAutomatedFixPrompt(extractDomain(url), p.title || 'Fix Issue', p.detail || ''),
     code: p.code || '',
   }));
+  const projectedScore = calculateProjectedScore(realHealthScore, rawFixPrompts, aiData.projectedScore);
+  const fixPrompts = normalizeFixPromptImpacts(rawFixPrompts, realHealthScore, projectedScore);
 
   return {
     healthScore: realHealthScore,
     summary: aiData.summary || pageSpeedData.summary || `Analysis of ${extractDomain(url)} complete.`,
     verdict: aiData.verdict || deriveVerdict(realHealthScore),
-    projectedScore: clamp(aiData.projectedScore ?? Math.min(realHealthScore + 17, 98), 0, 100),
+    projectedScore,
     auditBreakdown,
     fixPrompts,
     techStack: aiData.techStack || pageSpeedData.techStack || [],
     stats: aiData.stats || buildStats(auditBreakdown, pageSpeedData),
     source: 'nvidia-ai',
+    model,
   };
 }
 
@@ -552,7 +556,7 @@ function buildFallbackReport(pageSpeedData, url) {
   const auditBreakdown = buildCompleteAuditBreakdown([], pageSpeedData);
 
   const recs = pageSpeedData.recommendations || [];
-  const fixPrompts = recs.map((rec) => ({
+  const rawFixPrompts = recs.map((rec) => ({
     priority: rec.priority || 'MEDIUM',
     time: rec.time || '10 mins',
     title: rec.title || 'Fix Issue',
@@ -562,9 +566,9 @@ function buildFallbackReport(pageSpeedData, url) {
     code: '',
   }));
 
-  if (fixPrompts.length < 3) {
-    for (const issue of issues.filter((i) => i.severity === 'critical' || i.severity === 'high').slice(0, 5 - fixPrompts.length)) {
-      fixPrompts.push({
+  if (rawFixPrompts.length < 3) {
+    for (const issue of issues.filter((i) => i.severity === 'critical' || i.severity === 'high').slice(0, 5 - rawFixPrompts.length)) {
+      rawFixPrompts.push({
         priority: issue.severity === 'critical' ? 'CRITICAL' : 'HIGH',
         time: '15 mins', title: issue.title, detail: issue.description,
         impact: '+5 pts',
@@ -575,16 +579,19 @@ function buildFallbackReport(pageSpeedData, url) {
   }
 
   const stats = buildStats(auditBreakdown, pageSpeedData);
+  const projectedScore = calculateProjectedScore(overall, rawFixPrompts);
+  const fixPrompts = normalizeFixPromptImpacts(rawFixPrompts, overall, projectedScore);
 
   return {
     healthScore: overall,
     summary: pageSpeedData.summary || `Analysis of ${domain} complete. Score: ${overall}/100.`,
     verdict: deriveVerdict(overall),
-    projectedScore: Math.min(overall + 17, 98),
+    projectedScore,
     auditBreakdown, fixPrompts,
     techStack: pageSpeedData.techStack || ['Standard Web'],
     stats,
     source: 'pagespeed-fallback',
+    model: '',
   };
 }
 
@@ -667,7 +674,67 @@ function buildStats(auditBreakdown, pageSpeedData) {
   };
 }
 
+function extractImpactPoints(impact) {
+  if (typeof impact === 'number') return Math.max(0, impact);
+  if (typeof impact !== 'string') return 0;
+  const match = impact.match(/(\d+(?:\.\d+)?)/);
+  return match ? Math.max(0, Number.parseFloat(match[1])) : 0;
+}
+
+function calculateProjectedScore(currentScore, fixPrompts = [], aiProjectedScore) {
+  const current = clamp(Math.round(Number(currentScore) || 0), 0, 100);
+  const scoreCeiling = 98;
+  const remainingRoom = Math.max(0, scoreCeiling - current);
+  if (remainingRoom === 0 || fixPrompts.length === 0) return current;
+
+  const estimatedImpact = fixPrompts.reduce((sum, item) => sum + extractImpactPoints(item?.impact), 0);
+  const fallbackImpact = estimatedImpact > 0 ? estimatedImpact : Math.min(8, remainingRoom);
+  const aiNumber = typeof aiProjectedScore === 'string' ? Number.parseFloat(aiProjectedScore) : aiProjectedScore;
+  const aiImpact = Number.isFinite(aiNumber) ? Math.max(0, aiNumber - current) : 0;
+  const gain = Math.min(Math.max(fallbackImpact, aiImpact), 20, remainingRoom);
+
+  return clamp(Math.round(current + gain), 0, 100);
+}
+
+function normalizeFixPromptImpacts(fixPrompts = [], currentScore, projectedScore) {
+  const current = clamp(Math.round(Number(currentScore) || 0), 0, 100);
+  const projected = clamp(Math.round(Number(projectedScore) || current), 0, 100);
+  const availableGain = Math.max(0, projected - current);
+  const numericItems = fixPrompts.filter((item) => extractImpactPoints(item?.impact) > 0);
+  const totalRawImpact = numericItems.reduce((sum, item) => sum + extractImpactPoints(item.impact), 0);
+
+  if (numericItems.length === 0 || totalRawImpact === 0) {
+    return fixPrompts.map((item) => ({ ...item }));
+  }
+
+  let allocated = 0;
+  let numericIndex = 0;
+
+  return fixPrompts.map((item) => {
+    const rawImpact = extractImpactPoints(item?.impact);
+    if (rawImpact === 0) return { ...item };
+
+    numericIndex += 1;
+    const isLastNumeric = numericIndex === numericItems.length;
+    const remaining = Math.max(0, availableGain - allocated);
+    const scaled = totalRawImpact > availableGain
+      ? Math.round(rawImpact * (availableGain / totalRawImpact))
+      : Math.round(rawImpact);
+    const points = isLastNumeric ? remaining : Math.min(remaining, Math.max(0, scaled));
+    allocated += points;
+
+    return {
+      ...item,
+      impact: points > 0 ? `Est. +${points} pts` : 'Included in estimate',
+    };
+  });
+}
+
 function getPageSpeedAverage(pageSpeedData) {
+  if (Number.isFinite(pageSpeedData.overallScore)) {
+    return clamp(Math.round(pageSpeedData.overallScore), 0, 100);
+  }
+
   const scores = pageSpeedData.scores || {};
   const values = ['performance', 'seo', 'accessibility', 'bestPractices', 'security']
     .map((key) => scores[key])

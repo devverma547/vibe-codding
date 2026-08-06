@@ -111,6 +111,8 @@ export const scannerService = {
 
       // 5. Save lightweight metadata to Supabase
       const effectiveScore = aiReport?.healthScore ?? lighthouseResults.overallScore;
+      const aiWarnings = Array.isArray(aiReport?.warnings) ? aiReport.warnings : [];
+      const allWarnings = [...warnings, ...aiWarnings];
 
       if (userId) {
         await scanService.complete(scanId, {
@@ -127,7 +129,7 @@ export const scannerService = {
         ...lighthouseResults,
         overallScore: effectiveScore,
         aiReport: aiReport || null,
-        warnings,
+        warnings: allWarnings,
         createdAt: new Date().toISOString(),
       };
       await reportCache.save(scanId, fullReport);
@@ -147,7 +149,7 @@ export const scannerService = {
           criticalCount: lighthouseResults.criticalCount,
           summary: aiReport?.summary || lighthouseResults.summary,
           aiReport,
-          warnings,
+          warnings: allWarnings,
         },
       };
     } catch (err) {

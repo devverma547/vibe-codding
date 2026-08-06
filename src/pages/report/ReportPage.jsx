@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { scannerService } from '../../services/scanner.service';
 import { useAuth } from '../../contexts/AuthContext';
+import { calculateProjectedScore, normalizeActionPlanImpacts } from '../../utils/reportScoring';
 
 const loadingSteps = [
   "Initializing SiteProof audit engine...",
@@ -206,7 +207,7 @@ export default function ReportPage() {
   const modules = ai?.auditBreakdown || reportData?.modules || [];
   
   // Fix prompts: prefer AI data, fallback to PageSpeed recommendations
-  const actionPlan = ai?.fixPrompts || [];
+  const rawActionPlan = ai?.fixPrompts || [];
   
   // Tech stack
   const techStack = ai?.techStack || reportData?.techStack || [];
@@ -232,11 +233,14 @@ export default function ReportPage() {
   // Summary
   const summary = ai?.summary || reportData?.summary || `Analysis of ${domainName} complete.`;
 
-  // Projected score
-  const projectedScore = ai?.projectedScore ?? Math.min(targetScore + 17, 98);
+  // Projected score is an estimate, capped by the remaining room in a 100-point score.
+  const projectedScore = calculateProjectedScore(targetScore, rawActionPlan, ai?.projectedScore);
+  const actionPlan = normalizeActionPlanImpacts(rawActionPlan, targetScore, projectedScore);
 
   // AI source label
-  const reportSource = ai?.source === 'nvidia-ai' ? 'NVIDIA AI + Google PageSpeed' : 'Google PageSpeed Insights';
+  const reportSource = ai?.source === 'nvidia-ai'
+    ? `NVIDIA AI${ai.model ? ` (${ai.model})` : ''} + Google PageSpeed`
+    : 'Google PageSpeed Insights';
 
   // Score color
   const scoreColor = targetScore >= 80 ? '#00F5A0' : targetScore >= 60 ? '#F5A623' : '#FF4D4D';
@@ -670,7 +674,7 @@ export default function ReportPage() {
                 <Sparkles size={20} className="text-[#00F5A0]" /> AI Recommendations & Fix Prompts
               </h2>
               <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
-                Ready-to-use LLM prompts to fix your codebase. Paste directly into v0, Bolt.new, Lovable, or Cursor.
+                Ready-to-use LLM prompts. Impact numbers are estimates and are capped by the current score gap.
               </p>
             </div>
 
@@ -731,7 +735,9 @@ export default function ReportPage() {
         {targetScore > 0 && actionPlan.length > 0 && (
           <div className="p-8 rounded-3xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-[#00F5A0]/30 text-center space-y-4 shadow-sm dark:shadow-[0_0_40px_rgba(0,245,160,0.1)]">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Projected score after fixes</h3>
-            <p className="text-xs text-slate-600 dark:text-gray-400 max-w-md mx-auto">Completing the top recommended fixes yields a significant quality boost.</p>
+            <p className="text-xs text-slate-600 dark:text-gray-400 max-w-md mx-auto">
+              Estimated after fixes. Scores never exceed 100, and recommendation impacts are not guaranteed additive points.
+            </p>
 
             <div className="flex items-center justify-center gap-6 pt-2">
               <div className="text-center">
@@ -739,7 +745,7 @@ export default function ReportPage() {
                 <div className="text-[10px] text-slate-500 dark:text-gray-500">Current</div>
               </div>
 
-              <div className="text-xl font-bold text-[#00F5A0]">➔</div>
+              <div className="text-xl font-bold text-[#00F5A0]">-&gt;</div>
 
               <div className="text-center">
                 <div className="text-4xl font-mono font-extrabold text-[#00F5A0]">{projectedScore}</div>
@@ -800,7 +806,7 @@ export default function ReportPage() {
                       activeFixModal.priority === 'HIGH' ? 'bg-amber-500/10 text-amber-400' :
                       'bg-blue-500/10 text-blue-400'
                     }`}>{activeFixModal.priority}</span>
-                    <span className="text-xs text-slate-500 dark:text-gray-400">⏱ {activeFixModal.time} · Impact: {activeFixModal.impact}</span>
+                    <span className="text-xs text-slate-500 dark:text-gray-400">{activeFixModal.time} | Impact: {activeFixModal.impact}</span>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-gray-400 mt-1">{activeFixModal.detail}</p>
                 </div>
@@ -824,7 +830,7 @@ export default function ReportPage() {
                       </pre>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-gray-500 italic pt-1">
-                      Copy this prompt into Cursor, v0, Bolt.new, Lovable, or ChatGPT for an instant contextual fix.
+                      Paste this into Cursor, v0, Bolt.new, Lovable, or ChatGPT. If no GitHub repo was linked, the tool must inspect your local files first.
                     </p>
                   </div>
 

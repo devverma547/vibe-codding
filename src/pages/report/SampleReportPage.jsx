@@ -488,14 +488,14 @@ export default function SampleReportPage() {
                 <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-white/5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 flex items-center gap-1.5"><Code size={14} /> LLM Prompt</span>
-                    <button onClick={() => handleCopyPrompt(`You are an AI Coding Assistant. Implement the following fix for the website ${domainName} automatically.\n\nIssue to Fix: ${activeFixModal.title}\nDetails: ${activeFixModal.detail}\n\nTask: Provide the EXACT file paths, locate the problematic code, and provide the exact replacement code to resolve this issue. Do not ask the user to fix it; provide the full code rewrite.`)}
+                    <button onClick={() => handleCopyPrompt(`You are an AI Coding Assistant. Implement the following fix for the website ${domainName} automatically.\n\nIssue to Fix: ${activeFixModal.title}\nDetails: ${activeFixModal.detail}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`)}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#00F5A0] hover:bg-[#00F5A0]/10 transition-colors flex items-center gap-1.5 cursor-pointer border border-[#00F5A0]/30">
                       {copiedPrompt ? <Check size={12} /> : <Copy size={12} />}
                       {copiedPrompt ? 'Copied!' : 'Copy Prompt 📋'}
                     </button>
                   </div>
                   <pre className="p-4 rounded-xl bg-slate-100 dark:bg-[#05080E] border border-slate-200 dark:border-white/10 font-mono text-sm text-slate-800 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                    {`You are an AI Coding Assistant. Implement the following fix for the website ${domainName} automatically.\n\nIssue to Fix: ${activeFixModal.title}\nDetails: ${activeFixModal.detail}\n\nTask: Provide the EXACT file paths, locate the problematic code, and provide the exact replacement code to resolve this issue. Do not ask the user to fix it; provide the full code rewrite.`}
+                    {`You are an AI Coding Assistant. Implement the following fix for the website ${domainName} automatically.\n\nIssue to Fix: ${activeFixModal.title}\nDetails: ${activeFixModal.detail}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`}
                   </pre>
                 </div>
               </div>
