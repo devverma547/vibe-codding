@@ -14,6 +14,7 @@ const PAGESPEED_API = 'https://www.googleapis.com/pagespeedonline/v5/runPagespee
  * @returns {Promise<object>} Parsed lighthouse results
  */
 export async function runLighthouseAnalysis(url, strategy = 'mobile') {
+  const apiKey = import.meta.env.VITE_PAGESPEED_API_KEY || '';
   const params = new URLSearchParams({
     url,
     strategy,
@@ -23,6 +24,10 @@ export async function runLighthouseAnalysis(url, strategy = 'mobile') {
   params.append('category', 'SEO');
   params.append('category', 'ACCESSIBILITY');
   params.append('category', 'BEST_PRACTICES');
+  // Add API key for higher quota (25 → 25,000 requests/day)
+  if (apiKey) {
+    params.append('key', apiKey);
+  }
 
   const response = await fetch(`${PAGESPEED_API}?${params.toString()}`);
 

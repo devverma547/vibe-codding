@@ -42,7 +42,7 @@ export default function Footer() {
               <li><Link to="/" className="text-slate-500 dark:text-gray-400 hover:text-[#00F5A0] transition-colors text-xs">Features</Link></li>
               <li><Link to="/pricing" className="text-slate-500 dark:text-gray-400 hover:text-[#00F5A0] transition-colors text-xs">Pricing</Link></li>
               <li><Link to="/dashboard" className="text-slate-500 dark:text-gray-400 hover:text-[#00F5A0] transition-colors text-xs">Dashboard</Link></li>
-              <li><Link to="/report/novaflow-ai.vercel.app" className="text-slate-500 dark:text-gray-400 hover:text-[#00F5A0] transition-colors text-xs">Sample Report</Link></li>
+              <li><Link to="/sample-report" className="text-slate-500 dark:text-gray-400 hover:text-[#00F5A0] transition-colors text-xs">Live Demo</Link></li>
               <li><a href="#" className="text-slate-500 dark:text-gray-400 hover:text-[#00F5A0] transition-colors text-xs">API Docs</a></li>
             </ul>
           </div>

@@ -42,7 +42,7 @@ export default function Navbar() {
   const publicNavLinks = [
     { label: 'Home', href: '/', icon: <Home size={18} /> },
     { label: 'Pricing', href: '/pricing', icon: <CreditCard size={18} /> },
-    { label: 'Sample report', href: '/sample-report', icon: <FileText size={18} /> },
+    { label: 'Live Demo', href: '/sample-report', icon: <FileText size={18} /> },
     { label: 'About us', href: '/about', icon: <Info size={18} /> },
     { label: 'Contact us', href: '/contact', icon: <Mail size={18} /> },
   ];

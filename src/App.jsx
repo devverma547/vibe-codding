@@ -23,6 +23,7 @@ const AboutPage = lazy(() => import('./pages/about/AboutPage'));
 const PricingPage = lazy(() => import('./pages/pricing/PricingPage'));
 const ContactPage = lazy(() => import('./pages/contact/ContactPage'));
 const ReportPage = lazy(() => import('./pages/report/ReportPage'));
+const SampleReportPage = lazy(() => import('./pages/report/SampleReportPage'));
 const NotFoundPage = lazy(() => import('./pages/errors/NotFoundPage'));
 
 /**
@@ -45,7 +46,7 @@ function App() {
                       <Route path="/about" element={<AboutPage />} />
                       <Route path="/pricing" element={<PricingPage />} />
                       <Route path="/contact" element={<ContactPage />} />
-                      <Route path="/sample-report" element={<ReportPage />} />
+                      <Route path="/sample-report" element={<SampleReportPage />} />
 
                       {/* Auth Routes */}
                       <Route path="/login" element={<LoginPage />} />

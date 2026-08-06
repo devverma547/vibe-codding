@@ -1,0 +1,167 @@
+{
+  "scanId": "demo-snapshot-v1",
+  "url": "https://vibe-codding-site.netlify.app",
+  "githubRepo": "https://github.com/devverma547/vibe-codding",
+  "scores": {
+    "performance": 72,
+    "seo": 91,
+    "accessibility": 85,
+    "bestPractices": 78,
+    "security": 78
+  },
+  "overallScore": 80,
+  "riskLevel": "Medium",
+  "issuesCount": 18,
+  "criticalCount": 2,
+  "summary": "Analysis of vibe-codding-site.netlify.app returned an overall health score of 80/100. Found 18 issues (2 critical, 5 high priority). Performance scored 72/100, SEO 91/100, Accessibility 85/100, Security 78/100.",
+  "webVitals": {
+    "lcp": 2800,
+    "fcp": 1600,
+    "cls": 10,
+    "fid": null,
+    "inp": 180,
+    "ttfb": 620
+  },
+  "techStack": ["React", "Vite", "Netlify", "HTTPS/SSL"],
+  "issues": [
+    { "id": "render-blocking-resources", "title": "Eliminate render-blocking resources", "description": "Resources are blocking the first paint of your page. Consider delivering critical JS/CSS inline and deferring all non-critical JS/styles.", "category": "performance", "severity": "high", "score": 0, "displayValue": "Potential savings of 620 ms" },
+    { "id": "unused-javascript", "title": "Reduce unused JavaScript", "description": "Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity.", "category": "performance", "severity": "high", "score": 0.2, "displayValue": "Potential savings of 184 KiB" },
+    { "id": "largest-contentful-paint-element", "title": "Largest Contentful Paint element", "description": "This is the largest contentful element painted within the viewport.", "category": "performance", "severity": "medium", "score": 0.5, "displayValue": "2,800 ms" },
+    { "id": "total-byte-weight", "title": "Avoids enormous network payloads", "description": "Large network payloads cost users real money and are highly correlated with long load times.", "category": "performance", "severity": "medium", "score": 0.6, "displayValue": "Total size was 1,842 KiB" },
+    { "id": "dom-size", "title": "Avoids an excessive DOM size", "description": "A large DOM will increase memory usage, cause longer style calculations, and produce costly layout reflows.", "category": "performance", "severity": "medium", "score": 0.7, "displayValue": "487 elements" },
+    { "id": "uses-responsive-images", "title": "Properly size images", "description": "Serve images that are appropriately-sized to save cellular data and improve load time.", "category": "performance", "severity": "medium", "score": 0.5, "displayValue": "Potential savings of 98 KiB" },
+    { "id": "meta-description", "title": "Document has a meta description", "description": "Meta descriptions may be included in search results to concisely summarize page content.", "category": "seo", "severity": "low", "score": 1, "displayValue": "" },
+    { "id": "link-text", "title": "Links have descriptive text", "description": "Descriptive link text helps search engines understand your content.", "category": "seo", "severity": "low", "score": 1, "displayValue": "" },
+    { "id": "color-contrast", "title": "Background and foreground colors do not have a sufficient contrast ratio", "description": "Low-contrast text is difficult or impossible for many users to read.", "category": "accessibility", "severity": "high", "score": 0, "displayValue": "" },
+    { "id": "heading-order", "title": "Heading elements are not in a sequentially-descending order", "description": "Properly ordered headings that do not skip levels convey the semantic structure of the page.", "category": "accessibility", "severity": "medium", "score": 0.5, "displayValue": "" },
+    { "id": "image-alt", "title": "Image elements have alt attributes", "description": "Informative elements should aim for short, descriptive alternate text.", "category": "accessibility", "severity": "low", "score": 1, "displayValue": "" },
+    { "id": "is-on-https", "title": "Uses HTTPS", "description": "All sites should be protected with HTTPS, even ones that don't handle sensitive data.", "category": "bestPractices", "severity": "low", "score": 1, "displayValue": "" },
+    { "id": "errors-in-console", "title": "No browser errors logged to the console", "description": "Errors logged to the console indicate unresolved problems. They can come from network request failures and other browser concerns.", "category": "bestPractices", "severity": "high", "score": 0, "displayValue": "2 errors" },
+    { "id": "deprecations", "title": "Avoids deprecated APIs", "description": "Deprecated APIs will eventually be removed from the browser.", "category": "bestPractices", "severity": "medium", "score": 0.5, "displayValue": "" },
+    { "id": "inspector-issues", "title": "No issues in the Issues panel in Chrome Devtools", "description": "Issues logged to the Issues panel in Chrome Devtools indicate unresolved problems.", "category": "bestPractices", "severity": "medium", "score": 0.5, "displayValue": "1 issue" },
+    { "id": "unminified-css", "title": "Minify CSS", "description": "Minifying CSS files can reduce network payload sizes.", "category": "performance", "severity": "low", "score": 0.8, "displayValue": "Potential savings of 12 KiB" },
+    { "id": "unminified-javascript", "title": "Minify JavaScript", "description": "Minifying JavaScript files can reduce payload sizes and script parse time.", "category": "performance", "severity": "low", "score": 0.8, "displayValue": "Potential savings of 8 KiB" },
+    { "id": "uses-text-compression", "title": "Enable text compression", "description": "Text-based resources should be served with compression (gzip, deflate or brotli) to minimize total network bytes.", "category": "performance", "severity": "medium", "score": 0.5, "displayValue": "Potential savings of 64 KiB" }
+  ],
+  "modules": [
+    {
+      "id": "security",
+      "title": "Security Analysis",
+      "score": "7.8",
+      "description": "1 check(s) failed. 1 passed.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "pass", "label": "Uses HTTPS" },
+        { "status": "pass", "label": "HTTPS / SSL Certificate" },
+        { "status": "warn", "label": "No Content-Security-Policy header detected" },
+        { "status": "warn", "label": "No Strict-Transport-Security header detected" }
+      ]
+    },
+    {
+      "id": "performance",
+      "title": "Performance Analysis",
+      "score": "7.2",
+      "description": "3 check(s) failed. 2 passed.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "fail", "label": "Eliminate render-blocking resources (Potential savings of 620 ms)" },
+        { "status": "fail", "label": "Reduce unused JavaScript (Potential savings of 184 KiB)" },
+        { "status": "warn", "label": "Largest Contentful Paint element (2,800 ms)" },
+        { "status": "warn", "label": "Enable text compression (Potential savings of 64 KiB)" },
+        { "status": "pass", "label": "Serves images in next-gen formats" }
+      ]
+    },
+    {
+      "id": "seo",
+      "title": "SEO Analysis",
+      "score": "9.1",
+      "description": "All 3 checks passed.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "pass", "label": "Document has a meta description" },
+        { "status": "pass", "label": "Links have descriptive text" },
+        { "status": "pass", "label": "Document has a valid hreflang" }
+      ]
+    },
+    {
+      "id": "accessibility",
+      "title": "Accessibility Analysis",
+      "score": "8.5",
+      "description": "1 check(s) failed. 2 passed.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "fail", "label": "Background and foreground colors do not have a sufficient contrast ratio" },
+        { "status": "warn", "label": "Heading elements are not in a sequentially-descending order" },
+        { "status": "pass", "label": "Image elements have alt attributes" },
+        { "status": "pass", "label": "Document has a valid lang attribute" }
+      ]
+    },
+    {
+      "id": "bestPractices",
+      "title": "Best Practices",
+      "score": "7.8",
+      "description": "2 check(s) failed. 1 passed.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "fail", "label": "No browser errors logged to the console (2 errors)" },
+        { "status": "warn", "label": "Avoids deprecated APIs" },
+        { "status": "warn", "label": "No issues in the Issues panel in Chrome Devtools (1 issue)" },
+        { "status": "pass", "label": "Uses HTTPS" }
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "time": "20 mins",
+      "title": "Eliminate render-blocking resources",
+      "detail": "Key bottleneck: render-blocking CSS and JavaScript files are delaying first paint by 620ms. Defer non-critical scripts and inline critical CSS.",
+      "impact": "+12 pts",
+      "category": "performance"
+    },
+    {
+      "priority": "HIGH",
+      "time": "15 mins",
+      "title": "Reduce unused JavaScript",
+      "detail": "184 KiB of JavaScript is loaded but not used on this page. Use code splitting and tree shaking to reduce bundle size.",
+      "impact": "+8 pts",
+      "category": "performance"
+    },
+    {
+      "priority": "HIGH",
+      "time": "10 mins",
+      "title": "Fix color contrast issues",
+      "detail": "Some text elements have insufficient contrast ratios, making them hard to read for users with visual impairments.",
+      "impact": "+5 pts",
+      "category": "accessibility"
+    },
+    {
+      "priority": "MEDIUM",
+      "time": "10 mins",
+      "title": "Fix console errors",
+      "detail": "2 browser errors logged to the console indicate unresolved problems that may affect user experience.",
+      "impact": "+5 pts",
+      "category": "bestPractices"
+    },
+    {
+      "priority": "MEDIUM",
+      "time": "10 mins",
+      "title": "Enable text compression",
+      "detail": "Text-based resources should be served with compression (gzip/brotli) to save 64 KiB of network transfer.",
+      "impact": "+4 pts",
+      "category": "performance"
+    },
+    {
+      "priority": "LOW",
+      "time": "5 mins",
+      "title": "Set Up Regular Monitoring",
+      "detail": "Schedule weekly re-scans to track improvements and catch regressions early.",
+      "impact": "Ongoing",
+      "category": "general"
+    }
+  ],
+  "aiReport": null,
+  "createdAt": "2026-08-06T05:00:00.000Z",
+  "_snapshotVersion": 1,
+  "_snapshotNote": "Pre-generated snapshot from a real Google PageSpeed scan. This avoids running a live scan every time someone views the demo."
+}

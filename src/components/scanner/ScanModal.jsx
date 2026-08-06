@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShieldCheck, CheckCircle2, Loader2, Sparkles, ArrowRight, X, Terminal } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, Loader2, Sparkles, ArrowRight, X, Terminal, GitBranch } from 'lucide-react';
 import { scannerService } from '../../services/scanner.service';
 
 const steps = [
   { title: 'Connecting to Host & Parsing DOM', detail: 'Fetching headers, TLS certificates, and DNS records...' },
-  { title: 'Security & Vulnerability Audit', detail: 'Testing HSTS, CSP headers, XSS exposure, exposed secrets...' },
-  { title: 'Core Web Vitals & Payload Metrics', detail: 'Measuring LCP, CLS, FID, uncompressed hero images...' },
-  { title: 'Accessibility & WCAG 2.1 AA Analysis', detail: 'Scanning contrast ratios, ARIA landmarks, alt attributes...' },
-  { title: 'SEO & Structured Data Verification', detail: 'Checking title tags, meta description, OpenGraph, JSON-LD...' },
-  { title: 'AI Copy & Legal Compliance Check', detail: 'Evaluating readability, privacy policy, GDPR cookie consent...' },
-  { title: 'Synthesizing 13-Module Health Score', detail: 'Generating prioritized AI action plan and score breakdown...' },
+  { title: 'Running Google PageSpeed Insights', detail: 'Measuring performance, SEO, accessibility, and best practices via Lighthouse API...' },
+  { title: 'Extracting Source Code from GitHub', detail: 'Fetching repository file tree and reading critical source files...' },
+  { title: 'Security & Vulnerability Audit', detail: 'Checking HTTPS, security headers, and running vulnerability scans...' },
+  { title: 'Core Web Vitals & Payload Metrics', detail: 'Analyzing LCP, CLS, FCP, INP, TTFB, and image optimization...' },
+  { title: 'Sending to AI for Deep Analysis', detail: 'Bundling PageSpeed + source code for 6-module audit report...' },
+  { title: 'AI Generating Fix Prompts & Action Plan', detail: 'Creating paste-ready LLM prompts for v0, Bolt.new, and Lovable...' },
+  { title: 'Synthesizing Health Score & Report', detail: 'Calculating weighted score across all audit modules...' },
 ];
 
 export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
@@ -20,6 +21,8 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [logs, setLogs] = useState([]);
   const [generatedReportId, setGeneratedReportId] = useState(null);
+  const [scanError, setScanError] = useState(null);
+  const scanTriggered = useRef(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -27,51 +30,93 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
       setCurrentStepIndex(0);
       setLogs([]);
       setGeneratedReportId(null);
+      setScanError(null);
+      scanTriggered.current = false;
       return;
     }
 
+    // Prevent double-triggering in React StrictMode
+    if (scanTriggered.current) return;
+    scanTriggered.current = true;
+
     const cleanUrl = targetUrl || 'https://your-site.com';
-    const initialLogs = [`[0.00s] Initializing SiteProof AI Engine v2.6 for ${cleanUrl}`];
+    const initialLogs = [`[0.00s] Initializing SiteProof AI Engine v3.0 for ${cleanUrl}`];
     if (githubRepo) {
       initialLogs.push(`[0.05s] Linked Source Repo: ${githubRepo}`);
+      initialLogs.push(`[0.06s] GitHub code extraction will run in parallel with PageSpeed`);
     }
+    initialLogs.push(`[0.10s] AI Model: NVIDIA nemotron-3-super-120b-a12b`);
     setLogs(initialLogs);
 
-    // Trigger real scan storage in database
-    scannerService.analyzeSite(cleanUrl, githubRepo).then((res) => {
-      if (res.success && res.data) {
-        setGeneratedReportId(res.data.report?.id || res.data.scan?.id || cleanUrl);
-      }
-    }).catch(console.error);
+    const startTime = Date.now();
 
-    let stepCounter = 0;
-    const interval = setInterval(() => {
-      stepCounter++;
-      const nextProgress = Math.min(Math.round((stepCounter / steps.length) * 100), 100);
-      setProgress(nextProgress);
+    // Trigger the REAL scan pipeline
+    scannerService
+      .analyzeSite(cleanUrl, githubRepo, null, (pct, step, msg) => {
+        // Real progress callback from the scanner
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+        setProgress(pct);
 
-      if (stepCounter < steps.length) {
-        setCurrentStepIndex(stepCounter);
+        // Map scanner step to our display step
+        const displayStep = Math.min(step, steps.length - 1);
+        setCurrentStepIndex(displayStep);
+
         setLogs((prev) => [
           ...prev,
-          `[${(stepCounter * 0.4).toFixed(2)}s] ${steps[stepCounter].title}... OK`,
+          `[${elapsed}s] ${msg}`,
         ]);
+      })
+      .then((res) => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+
+        if (res.success && res.data) {
+          setGeneratedReportId(res.data.scanId);
+          setProgress(100);
+          setCurrentStepIndex(steps.length - 1);
+          setLogs((prev) => [
+            ...prev,
+            `[${elapsed}s] ✅ Audit complete! Health Score: ${res.data.overallScore}/100`,
+            res.data.aiReport?.source === 'nvidia-ai'
+              ? `[${elapsed}s] 🤖 AI analysis powered by NVIDIA NIM`
+              : `[${elapsed}s] 📊 Report generated from PageSpeed data`,
+          ]);
+        } else {
+          setScanError(res.error || 'Scan failed');
+          setLogs((prev) => [
+            ...prev,
+            `[${elapsed}s] ❌ Error: ${res.error || 'Unknown error'}`,
+          ]);
+        }
+      })
+      .catch((err) => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+        setScanError(err.message);
+        setLogs((prev) => [
+          ...prev,
+          `[${elapsed}s] ❌ Fatal error: ${err.message}`,
+        ]);
+      });
+
+    // Animate steps while we wait (visual feedback for long scans)
+    let visualStep = 0;
+    const stepInterval = setInterval(() => {
+      visualStep++;
+      if (visualStep < steps.length) {
+        // Only update visual step if real progress hasn't surpassed it
+        setCurrentStepIndex((current) => Math.max(current, Math.min(visualStep, steps.length - 1)));
       } else {
-        clearInterval(interval);
-        setLogs((prev) => [
-          ...prev,
-          `[2.80s] Audit complete! Health Score calculated.`,
-        ]);
+        clearInterval(stepInterval);
       }
-    }, 450);
+    }, 3000); // Slower intervals since real scans take ~15-30s
 
-    return () => clearInterval(interval);
+    return () => clearInterval(stepInterval);
   }, [isOpen, targetUrl, githubRepo]);
 
   if (!isOpen) return null;
 
   const displayUrl = targetUrl || 'https://your-site.com';
   const isFinished = progress >= 100;
+  const hasError = !!scanError;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
@@ -92,11 +137,15 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
                 Scanning Site <span className="text-[#00F5A0] font-mono text-sm font-normal">{displayUrl}</span>
                 {githubRepo && (
                   <span className="text-xs bg-white/10 text-gray-300 px-2 py-0.5 rounded-full font-mono font-normal flex items-center gap-1">
-                    <Terminal size={10} className="text-[#00F5A0]" /> {githubRepo.replace('https://github.com/', '')}
+                    <GitBranch size={10} className="text-[#00F5A0]" /> {githubRepo.replace('https://github.com/', '')}
                   </span>
                 )}
               </h3>
-              <p className="text-xs text-gray-400">Running full-spectrum 13-module quality audit</p>
+              <p className="text-xs text-gray-400">
+                {githubRepo
+                  ? 'Running full-stack AI audit: PageSpeed + GitHub + NVIDIA AI'
+                  : 'Running AI-powered quality audit via PageSpeed + NVIDIA AI'}
+              </p>
             </div>
           </div>
 
@@ -115,19 +164,27 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold">
               <span className="text-gray-300 flex items-center gap-1.5">
-                {!isFinished ? (
+                {hasError ? (
+                  <span className="text-red-400">✕</span>
+                ) : !isFinished ? (
                   <Loader2 size={14} className="animate-spin text-[#00F5A0]" />
                 ) : (
                   <CheckCircle2 size={14} className="text-[#00F5A0]" />
                 )}
-                {isFinished ? 'Analysis Complete!' : steps[currentStepIndex]?.title}
+                {hasError ? 'Scan Failed' : isFinished ? 'Analysis Complete!' : steps[currentStepIndex]?.title}
               </span>
-              <span className="text-[#00F5A0] font-mono font-bold text-sm">{progress}%</span>
+              <span className={`font-mono font-bold text-sm ${hasError ? 'text-red-400' : 'text-[#00F5A0]'}`}>
+                {progress}%
+              </span>
             </div>
 
             <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/10">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-[#00F5A0] to-[#00E599] shadow-[0_0_15px_rgba(0,245,160,0.5)]"
+                className={`h-full rounded-full shadow-[0_0_15px_rgba(0,245,160,0.5)] ${
+                  hasError
+                    ? 'bg-gradient-to-r from-red-500 to-red-400'
+                    : 'bg-gradient-to-r from-[#00F5A0] to-[#00E599]'
+                }`}
                 initial={{ width: '0%' }}
                 animate={{ width: `${progress}%` }}
                 transition={{ ease: 'easeOut', duration: 0.3 }}
@@ -135,27 +192,65 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
             </div>
           </div>
 
+          {/* Live Checklist — keeps users engaged */}
+          <div className="space-y-1.5 py-1">
+            {steps.map((step, idx) => {
+              const isDone = idx < currentStepIndex;
+              const isActive = idx === currentStepIndex && !isFinished && !hasError;
+              const isPending = idx > currentStepIndex && !isFinished;
+              const isAllDone = isFinished;
+
+              return (
+                <div key={idx} className={`flex items-center gap-2.5 text-xs transition-all duration-300 ${
+                  hasError && idx === currentStepIndex ? 'text-red-400' :
+                  isDone || isAllDone ? 'text-[#00F5A0]/70' :
+                  isActive ? 'text-white font-medium' :
+                  'text-gray-600'
+                }`}>
+                  <span className="w-5 text-center shrink-0">
+                    {hasError && idx === currentStepIndex ? '✕' :
+                     isDone || isAllDone ? '✅' :
+                     isActive ? '⏳' : '○'}
+                  </span>
+                  <span className={isActive ? 'animate-pulse' : ''}>{step.title}</span>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Active Step Details Card */}
-          <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-[#00F5A0] shrink-0 mt-0.5" />
+          <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+            hasError
+              ? 'bg-red-500/5 border-red-500/20'
+              : 'bg-white/[0.03] border-white/5'
+          }`}>
+            <Sparkles className={`w-5 h-5 shrink-0 mt-0.5 ${hasError ? 'text-red-400' : 'text-[#00F5A0]'}`} />
             <div>
               <h4 className="text-sm font-semibold text-white">
-                {isFinished ? 'Report ready for inspection' : steps[currentStepIndex]?.title}
+                {hasError ? 'Scan encountered an error' : isFinished ? 'Report ready for inspection' : steps[currentStepIndex]?.title}
               </h4>
               <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                {isFinished ? 'Found potential improvements across audit modules.' : steps[currentStepIndex]?.detail}
+                {hasError
+                  ? scanError
+                  : isFinished
+                  ? 'Found potential improvements across audit modules. Fix prompts are ready.'
+                  : steps[currentStepIndex]?.detail}
               </p>
             </div>
           </div>
 
           {/* Console / Terminal Log Output */}
-          <div className="bg-[#05080E] border border-white/10 rounded-xl p-4 font-mono text-xs text-gray-300 space-y-1.5 max-h-40 overflow-y-auto">
+          <div className="bg-[#05080E] border border-white/10 rounded-xl p-4 font-mono text-xs text-gray-300 space-y-1.5 max-h-44 overflow-y-auto">
             <div className="text-gray-500 flex items-center gap-2 pb-1 border-b border-white/5 text-[11px]">
-              <Terminal size={12} className="text-[#00F5A0]" /> SiteProof Live Scan Stream
+              <Terminal size={12} className="text-[#00F5A0]" /> SiteProof Live Scan Stream — AI Pipeline v3.0
             </div>
             {logs.map((log, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-emerald-400/90">
-                <span className="text-gray-600">›</span> {log}
+              <div key={idx} className={`flex items-start gap-2 ${
+                log.includes('❌') ? 'text-red-400' :
+                log.includes('✅') || log.includes('🤖') || log.includes('📊') ? 'text-[#00F5A0]' :
+                'text-emerald-400/90'
+              }`}>
+                <span className="text-gray-600 shrink-0">›</span> <span className="break-all">{log}</span>
               </div>
             ))}
           </div>
@@ -166,7 +261,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
               onClick={onClose}
               className="px-4 py-2 text-xs font-medium text-gray-400 hover:text-white transition-colors"
             >
-              Cancel
+              {hasError ? 'Close' : 'Cancel'}
             </button>
             <button
               disabled={!isFinished}
@@ -181,7 +276,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
                   : 'bg-white/10 text-gray-500 cursor-not-allowed'
               }`}
             >
-              View Detailed Audit Report <ArrowRight size={14} />
+              View AI Audit Report <ArrowRight size={14} />
             </button>
           </div>
 

@@ -45,11 +45,7 @@ export default function LandingPage() {
     setIsScanModalOpen(true);
   };
 
-  const sampleSites = [
-    { label: 'novaflow-ai.vercel.app', url: 'https://novaflow-ai.vercel.app', repo: 'https://github.com/novaflow/novaflow-app' },
-    { label: 'demo-store.com', url: 'https://demo-store.com', repo: 'https://github.com/demo-store/storefront' },
-    { label: 'linear.app', url: 'https://linear.app', repo: 'https://github.com/linear/linear-frontend' }
-  ];
+  // Removed fake sample sites — the Live Demo page runs a real scan on our own site
 
   const modules = [
     {
@@ -658,7 +654,7 @@ export default function LandingPage() {
               Ready to see a real report?
             </h2>
             <p className="text-base sm:text-lg text-slate-600 dark:text-gray-400">
-              Explore a complete live audit report generated for a real AI-built SaaS landing page.
+              Run a live scan on our own website — no fake data, no sample scores. Every result is genuine.
             </p>
 
             <div className="pt-4">
@@ -671,7 +667,7 @@ export default function LandingPage() {
                   to="/sample-report"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm sm:text-base transition-all shadow-[0_0_25px_rgba(0,245,160,0.35)] hover:shadow-[0_0_40px_rgba(0,245,160,0.6)] cursor-pointer"
                 >
-                  Open Sample Report <ArrowRight size={18} />
+                  Run Live Demo Scan <ArrowRight size={18} />
                 </Link>
               </motion.div>
             </div>
