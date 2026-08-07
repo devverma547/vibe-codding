@@ -148,10 +148,11 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => alert('All system alerts are nominal.')}
-              className="px-4 py-2 rounded-xl bg-white dark:bg-[#0D1527] hover:bg-slate-100 dark:hover:bg-white/5 border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-700 dark:text-gray-300 flex items-center gap-2 transition-colors shadow-sm dark:shadow-none"
+              disabled
+              title="Coming soon"
+              className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-[#0D1527] hover:bg-slate-50 dark:hover:bg-[#0D1527] border border-slate-200 dark:border-white/10 text-xs font-semibold text-slate-400 dark:text-gray-600 flex items-center gap-2 transition-colors cursor-not-allowed opacity-70"
             >
-              <Bell size={14} className="text-[#00F5A0]" /> Alerts
+              <Bell size={14} className="text-slate-400 dark:text-gray-600" /> No alerts yet
             </button>
           </div>
         </div>

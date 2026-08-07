@@ -343,30 +343,20 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* Social Proof Row */}
+            {/* MVP Beta Row */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
             >
-              <div className="flex -space-x-2">
-                {['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500'].map((color, i) => (
-                  <div key={i} className={`w-8 h-8 rounded-full ${color} border-2 border-slate-50 dark:border-[#080C14] flex items-center justify-center text-white text-xs font-bold`}>
-                    {String.fromCharCode(65 + i)}
-                  </div>
-                ))}
-              </div>
               <div className="text-sm text-slate-600 dark:text-gray-400">
                 <span className="font-bold text-slate-900 dark:text-white">
-                  <AnimatedCounter value={2400} suffix="+" />
-                </span> sites audited by AI builders
+                  Join our early beta
+                </span> — Be among the first to test SiteProof.
               </div>
-              <div className="flex items-center gap-1">
-                {[1,2,3,4,5].map(i => (
-                  <svg key={i} className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                ))}
-                <span className="text-xs font-semibold text-slate-500 dark:text-gray-400 ml-1">4.9/5</span>
+              <div className="flex items-center gap-1 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full text-xs font-semibold">
+                Beta Preview
               </div>
             </motion.div>
 
@@ -655,10 +645,10 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Ready to see a real report?
+              Ready to see a sample report?
             </h2>
             <p className="text-base sm:text-lg text-slate-600 dark:text-gray-400">
-              Run a live scan on our own website — no fake data, no sample scores. Every result is genuine.
+              Check out our sample audit to see how SiteProof analyzes data and generates actionable insights.
             </p>
 
             <div className="pt-4">
@@ -671,7 +661,7 @@ export default function LandingPage() {
                   to="/sample-report"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm sm:text-base transition-all shadow-[0_0_25px_rgba(0,245,160,0.35)] hover:shadow-[0_0_40px_rgba(0,245,160,0.6)] cursor-pointer"
                 >
-                  Run Live Demo Scan <ArrowRight size={18} />
+                  View Sample Report <ArrowRight size={18} />
                 </Link>
               </motion.div>
             </div>

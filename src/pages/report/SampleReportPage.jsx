@@ -111,8 +111,8 @@ export default function SampleReportPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans flex flex-col relative">
       <Helmet>
-        <title>Live Demo Report — SiteProof AI Web Quality Audit</title>
-        <meta name="description" content="See a real SiteProof audit report generated from genuine Google PageSpeed data. No fake scores — every metric shown is from a real scan." />
+        <title>Sample Report — SiteProof AI Web Quality Audit</title>
+        <meta name="description" content="See a sample SiteProof audit report showcasing how our platform analyzes sites and provides AI recommendations." />
       </Helmet>
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 space-y-10">
@@ -121,10 +121,10 @@ export default function SampleReportPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 px-5 py-3 rounded-2xl bg-[#00F5A0]/5 dark:bg-[#00F5A0]/10 border border-[#00F5A0]/20">
           <div className="flex items-center gap-2">
             <Zap size={16} className="text-[#00F5A0]" />
-            <span className="text-xs font-bold text-[#00F5A0] uppercase tracking-wider">Live Demo</span>
+            <span className="text-xs font-bold text-[#00F5A0] uppercase tracking-wider">Sample Report</span>
           </div>
           <p className="text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
-            This is a <span className="font-semibold text-slate-900 dark:text-white">real report snapshot</span> from a Google PageSpeed scan of our own website. Every score, issue, and metric is genuine — zero fake data. 
+            This is a <span className="font-semibold text-slate-900 dark:text-white">sample report</span> showcasing how SiteProof presents audit results and AI recommendations. 
             <Link to="/#scan" className="text-[#00F5A0] hover:underline ml-1 font-semibold">Scan your own site →</Link>
           </p>
         </div>
@@ -445,7 +445,7 @@ export default function SampleReportPage() {
         <div className="p-8 rounded-3xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-[#00F5A0]/30 text-center space-y-4 shadow-sm dark:shadow-[0_0_40px_rgba(0,245,160,0.1)]">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">Want to scan your own website?</h3>
           <p className="text-xs text-slate-600 dark:text-gray-400 max-w-md mx-auto">
-            This demo used real data. Get the same genuine audit for your own site in under 30 seconds.
+            Get an actionable audit and AI recommendations for your own site in under 30 seconds.
           </p>
           <Link to="/#scan"
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm transition-all shadow-[0_0_25px_rgba(0,245,160,0.35)] hover:shadow-[0_0_40px_rgba(0,245,160,0.6)] cursor-pointer">
