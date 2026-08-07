@@ -218,7 +218,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00F5A0]/10 border border-[#00F5A0]/30 text-xs font-semibold text-[#00F5A0] shadow-[0_0_20px_rgba(0,245,160,0.2)]"
             >
               <Zap size={14} className="text-[#00F5A0]" />
-              <span>⚡ 60-Second Scans · Full Reports · AI-Powered Fix Prompts</span>
+              <span>⚡ Built for Cursor, Bolt, Lovable, v0 & ChatGPT</span>
             </motion.div>
 
             {/* Main Headline */}
@@ -228,8 +228,8 @@ export default function LandingPage() {
               transition={{ delay: 0.1 }}
               className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white max-w-4xl mx-auto leading-[1.1]"
             >
-              Your AI built the site.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F5A0] via-[#00E093] to-[#00B4D8]">We find every flaw & write the AI prompts to fix them.</span>
+              Scan your AI-built site before launch.<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F5A0] via-[#00E093] to-[#00B4D8]">Get copy-paste fix prompts.</span>
             </motion.h1>
 
             {/* Subhead Paragraph */}
@@ -239,7 +239,7 @@ export default function LandingPage() {
               transition={{ delay: 0.2 }}
               className="text-base sm:text-lg text-slate-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed"
             >
-              SiteProof doesn't just inspect your site — we deliver complete audit reports and generate exact AI prompts so you can copy-paste them directly into Cursor, Bolt, or ChatGPT to rebuild or fix your site automatically.
+              Find hidden bugs, security flaws, and layout issues in seconds. Get ready-to-use AI prompts to paste directly into your IDE and fix everything instantly.
             </motion.p>
 
             {/* URL & GitHub Repo Input Form */}
@@ -375,14 +375,14 @@ export default function LandingPage() {
               transition={{ duration: 0.6 }}
             >
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00F5A0]/20 text-[#00F5A0] text-xs font-mono font-bold">
-                <FileText size={14} /> COMPLETE REPORT + AI PROMPT GENERATOR
+                <FileText size={14} /> COPY-PASTE FIX PROMPTS
               </div>
               <KineticTypography 
-                text="We don't just find issues — we write the exact prompts to fix them."
+                text="Fix your app as fast as you built it."
                 className="text-3xl sm:text-4xl font-extrabold mb-4"
               />
               <p className="text-sm text-slate-700 dark:text-gray-300 leading-relaxed">
-                SiteProof delivers a comprehensive audit report across all 12 technical modules. Better yet, our engine automatically crafts copy-paste AI prompts so you can feed them directly into <strong>Cursor, Bolt, v0, or ChatGPT</strong> to rebuild or fix your code in seconds.
+                Stop debugging AI hallucinations manually. SiteProof scans your app, pinpoints exactly what's wrong, and writes the exact prompt you need to paste into <strong>Cursor, Bolt, or ChatGPT</strong> to fix it instantly.
               </p>
             </motion.div>
 
@@ -551,9 +551,9 @@ export default function LandingPage() {
               </div>
 
               {[
-                { step: '01', title: 'Paste your live URL', desc: 'Works with Vercel, Netlify, Shopify, Webflow, or custom backend domains.' },
-                { step: '02', title: '2-Minute Deep Audit', desc: 'Runs Lighthouse metrics, HTTP security checks, and DOM layout evaluation simultaneously.' },
-                { step: '03', title: 'Full Report & AI Prompts', desc: 'Receive a complete 12-module audit report plus custom AI prompts to fix or remake your site automatically.' },
+                { step: '01', title: 'Deploy your AI app', desc: 'Paste your Vercel or Netlify preview URL and optional GitHub repo link.' },
+                { step: '02', title: 'Find hidden issues', desc: 'SiteProof scans for security flaws, bad layouts, and performance bottlenecks.' },
+                { step: '03', title: 'Copy the fix prompt', desc: 'Get the exact prompt to paste into Cursor or Bolt to resolve the issues instantly.' },
               ].map((item, idx) => (
                 <motion.div
                   key={idx}
