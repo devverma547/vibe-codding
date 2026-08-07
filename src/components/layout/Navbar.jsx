@@ -198,6 +198,7 @@ export default function Navbar() {
                       <Link
                         key={link.label}
                         to={link.href}
+                        onClick={() => setSidebarOpen(false)}
                         className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all group ${
                           isActive
                             ? 'bg-[#00F5A0]/10 text-[#00F5A0] border border-[#00F5A0]/30 font-bold'

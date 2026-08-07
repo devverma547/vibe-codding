@@ -117,7 +117,7 @@ export default function VerifyEmailPage() {
             <Shield className="w-6 h-6" />
           </div>
           <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-            SecureScan AI
+            SiteProof
           </span>
         </div>
 
