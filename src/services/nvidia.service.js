@@ -1,66 +1,183 @@
 /**
- * NVIDIA AI Service — Client-Side Proxy
+ * NVIDIA AI Service — Client-Side Proxy & Parallel Orchestrator ("Split the Brain")
  *
- * This service calls the secure Netlify Function (/.netlify/functions/analyze)
- * which handles NVIDIA API calls server-side. The API key is NEVER exposed
- * to the browser.
+ * This service calls two dedicated Netlify Serverless Functions in parallel:
+ *   1. /.netlify/functions/analyze-pagespeed (5 standard web audit modules)
+ *   2. /.netlify/functions/analyze-code (GitHub code extraction + Code Quality module)
  *
- * The function also handles GitHub code extraction server-side.
+ * Both requests run concurrently via Promise.allSettled() to avoid serverless timeouts
+ * and cut total scanning time in half.
  */
 import { calculateProjectedScore, normalizeActionPlanImpacts } from '../utils/reportScoring';
+import { isValidGithubRepo } from '../utils/validators';
 
 /**
- * Send PageSpeed data + GitHub repo URL to the secure Netlify Function
- * for AI analysis. The function handles:
- *   1. GitHub code extraction (with GITHUB_TOKEN, 5,000 req/hr)
- *   2. NVIDIA NIM AI call (key secure on server)
- *   3. Robust JSON parsing of AI response
- *
+ * Execute parallel AI analysis for PageSpeed + GitHub Code Quality
  * @param {object} pageSpeedData - Parsed PageSpeed/Lighthouse results
  * @param {string|null} githubRepoUrl - GitHub repo URL (or null)
- * @param {string} url - The scanned URL
- * @returns {Promise<object>} Structured AI analysis report
+ * @param {string} url - The scanned website URL
+ * @returns {Promise<object>} Combined 6-module AI audit report
  */
 export async function analyzeWithAI(pageSpeedData, githubRepoUrl, url) {
+  const hasGithub = Boolean(githubRepoUrl && isValidGithubRepo(githubRepoUrl).valid);
+
+  // Trigger parallel requests
+  const pageSpeedPromise = fetchPageSpeedAnalysis(pageSpeedData, url);
+  const codePromise = hasGithub ? fetchCodeAnalysis(githubRepoUrl, url) : null;
+
+  const promises = codePromise ? [pageSpeedPromise, codePromise] : [pageSpeedPromise];
+  const results = await Promise.allSettled(promises);
+
+  const pageSpeedResult = results[0];
+  const codeResult = codePromise ? results[1] : null;
+
+  // 1. Extract PageSpeed AI report (or fallback)
+  let pageSpeedReport = null;
+  if (pageSpeedResult.status === 'fulfilled' && pageSpeedResult.value) {
+    pageSpeedReport = pageSpeedResult.value;
+  } else {
+    console.warn('[AI] PageSpeed function call failed or timed out — using client fallback:', pageSpeedResult.reason);
+    pageSpeedReport = buildClientFallbackReport(pageSpeedData, url);
+  }
+
+  // 2. Extract Code Quality AI report (or null)
+  let codeReport = null;
+  if (codeResult && codeResult.status === 'fulfilled' && codeResult.value) {
+    codeReport = codeResult.value;
+  } else if (codeResult) {
+    console.warn('[AI] Code quality function call failed or timed out:', codeResult.reason);
+  }
+
+  // 3. Merge both results into unified 6-module report
+  return mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData, githubRepoUrl, url);
+}
+
+/**
+ * Call /.netlify/functions/analyze-pagespeed
+ */
+async function fetchPageSpeedAnalysis(pageSpeedData, url) {
   try {
-    const response = await fetch('/.netlify/functions/analyze', {
+    const response = await fetch('/.netlify/functions/analyze-pagespeed', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pageSpeedData, githubRepoUrl, url }),
+      body: JSON.stringify({ pageSpeedData, url }),
     });
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      console.error(`[AI] Netlify function error ${response.status}:`, errData);
-
-      // If function is not deployed or unavailable, use fallback
-      if (response.status === 404) {
-        console.warn('[AI] Netlify function not found — using PageSpeed fallback');
-        return buildClientFallbackReport(pageSpeedData, url);
-      }
-
-      throw new Error(errData.error || `Server error: ${response.status}`);
+      throw new Error(errData.error || `PageSpeed function error: ${response.status}`);
     }
 
-    const aiReport = await response.json();
-
-    // Validate the response has required fields
-    if (!aiReport || typeof aiReport.healthScore !== 'number') {
-      console.warn('[AI] Invalid response structure, using fallback');
-      return buildClientFallbackReport(pageSpeedData, url);
-    }
-
-    return aiReport;
+    return await response.json();
   } catch (err) {
-    console.error('[AI] Failed to reach analysis function:', err.message);
-    // Graceful fallback: still produce a report from PageSpeed data
-    return buildClientFallbackReport(pageSpeedData, url);
+    console.warn('[AI] fetchPageSpeedAnalysis failed:', err.message);
+    return null;
   }
 }
 
 /**
- * Client-side fallback when the Netlify Function is unavailable.
- * Produces a structured report from PageSpeed data alone.
+ * Call /.netlify/functions/analyze-code
+ */
+async function fetchCodeAnalysis(githubRepoUrl, url) {
+  try {
+    const response = await fetch('/.netlify/functions/analyze-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ githubRepoUrl, url }),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `Code function error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.warn('[AI] fetchCodeAnalysis failed:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Merge PageSpeed AI report + Code Quality AI report into unified 6-module structure
+ */
+function mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData, githubRepoUrl, url) {
+  const warnings = [
+    ...(pageSpeedReport.warnings || []),
+    ...(codeReport?.warnings || []),
+  ];
+
+  // 1. Audit Breakdown (5 PageSpeed modules + 1 Code Quality module)
+  const pageSpeedBreakdown = (pageSpeedReport.auditBreakdown || []).filter(
+    (m) => String(m.id || '').toLowerCase() !== 'code-quality'
+  );
+
+  const codeQualityModule = codeReport?.auditBreakdown?.[0] || {
+    id: 'code-quality',
+    category: 'Code Quality',
+    title: 'Code Quality',
+    score: '0.0',
+    description: githubRepoUrl
+      ? `GitHub repository (${githubRepoUrl.replace('https://github.com/', '')}) code analysis was unavailable or timed out.`
+      : 'No source code review was available. Link a GitHub repository and configure AI analysis for code quality checks.',
+    source: 'github-code-review',
+    checks: githubRepoUrl
+      ? [{ status: 'warn', label: 'Code review timed out or failed — rest of report uses PageSpeed metrics' }]
+      : [],
+  };
+
+  if (githubRepoUrl && (!codeReport || codeReport.source === 'code-fallback')) {
+    warnings.push('GitHub code review was unavailable or timed out — report includes PageSpeed analysis only.');
+  }
+
+  const auditBreakdown = [...pageSpeedBreakdown, codeQualityModule];
+
+  // 2. Fix Prompts (combine + sort by priority)
+  const combinedFixPrompts = [
+    ...(pageSpeedReport.fixPrompts || []),
+    ...(codeReport?.fixPrompts || []),
+  ];
+
+  const priorityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+  combinedFixPrompts.sort((a, b) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2));
+
+  // Deduplicate fix prompts by title
+  const seenTitles = new Set();
+  const fixPrompts = combinedFixPrompts.filter((p) => {
+    const key = (p.title || '').toLowerCase().trim();
+    if (!key || seenTitles.has(key)) return false;
+    seenTitles.add(key);
+    return true;
+  });
+
+  // 3. Recalculate stats over all 6 modules
+  const stats = {
+    passedChecks: auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'pass').length, 0),
+    failedChecks: auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'fail').length, 0),
+    warningChecks: auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'warn').length, 0),
+    criticalIssues: (pageSpeedData?.issues || []).filter((i) => i.severity === 'critical').length,
+  };
+
+  const healthScore = pageSpeedReport.healthScore ?? 50;
+  const projectedScore = pageSpeedReport.projectedScore ?? healthScore;
+
+  return {
+    healthScore,
+    summary: pageSpeedReport.summary || `Analysis of ${extractDomain(url)} complete.`,
+    verdict: pageSpeedReport.verdict || deriveVerdict(healthScore),
+    projectedScore,
+    auditBreakdown,
+    fixPrompts,
+    techStack: pageSpeedReport.techStack || pageSpeedData?.techStack || [],
+    stats,
+    source: pageSpeedReport.source || 'nvidia-ai',
+    model: pageSpeedReport.model || '',
+    warnings,
+  };
+}
+
+/**
+ * Client-side fallback when Netlify Functions are unavailable.
  */
 function buildClientFallbackReport(pageSpeedData, url) {
   const domain = extractDomain(url);
@@ -69,7 +186,6 @@ function buildClientFallbackReport(pageSpeedData, url) {
   const issues = pageSpeedData.issues || [];
   const modules = pageSpeedData.modules || [];
 
-  // Build audit breakdown from PageSpeed modules
   const auditBreakdown = modules.map((m) => ({
     id: m.id,
     category: m.title || m.id,
@@ -80,7 +196,6 @@ function buildClientFallbackReport(pageSpeedData, url) {
     checks: m.checks || [],
   }));
 
-  // Fallback if no modules exist
   if (auditBreakdown.length === 0) {
     const defaults = [
       { id: 'security', title: 'Security Analysis', key: 'security' },
@@ -119,7 +234,6 @@ function buildClientFallbackReport(pageSpeedData, url) {
     });
   }
 
-  // Build fix prompts from recommendations
   const recs = pageSpeedData.recommendations || [];
   const rawFixPrompts = recs.map((rec) => ({
     priority: rec.priority || 'MEDIUM',
@@ -131,7 +245,6 @@ function buildClientFallbackReport(pageSpeedData, url) {
     code: '',
   }));
 
-  // Add prompts from critical issues if we don't have enough
   if (rawFixPrompts.length < 3) {
     const critical = issues.filter((i) => i.severity === 'critical' || i.severity === 'high');
     for (const issue of critical.slice(0, 5 - rawFixPrompts.length)) {
@@ -157,7 +270,7 @@ function buildClientFallbackReport(pageSpeedData, url) {
   return {
     healthScore: overall,
     summary: pageSpeedData.summary || `Analysis of ${domain} complete. Score: ${overall}/100.`,
-    verdict: overall >= 90 ? 'Production Ready' : overall >= 75 ? 'Needs Minor Fixes' : overall >= 50 ? 'Needs Work Before Launch' : 'Critical Issues Found',
+    verdict: deriveVerdict(overall),
     projectedScore,
     auditBreakdown,
     fixPrompts,
@@ -170,6 +283,13 @@ function buildClientFallbackReport(pageSpeedData, url) {
     },
     source: 'pagespeed-fallback',
   };
+}
+
+function deriveVerdict(score) {
+  if (score >= 90) return 'Production Ready';
+  if (score >= 75) return 'Needs Minor Fixes';
+  if (score >= 50) return 'Needs Work Before Launch';
+  return 'Critical Issues Found';
 }
 
 function extractDomain(url) {
