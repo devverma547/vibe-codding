@@ -63,10 +63,10 @@ export const handler = async (event) => {
     // --- Step 2: Call NVIDIA NIM AI (server-side, key is secure) ---
     let aiReport;
     try {
-      aiReport = await callNvidiaAI(pageSpeedData, githubData, url);
+      aiReport = await callNvidiaAI(pageSpeedData, githubData, url, githubRepoUrl);
     } catch (err) {
       console.error('[Function] NVIDIA AI failed:', err.message);
-      aiReport = buildFallbackReport(pageSpeedData, url);
+      aiReport = buildFallbackReport(pageSpeedData, url, githubRepoUrl);
       warnings.push('AI deep analysis was unavailable — report uses Google PageSpeed data only.');
     }
 
@@ -273,13 +273,13 @@ async function extractGithubCode(repoUrl) {
 
 const NVIDIA_API_BASE = 'https://integrate.api.nvidia.com/v1';
 
-async function callNvidiaAI(pageSpeedData, githubData, url) {
+async function callNvidiaAI(pageSpeedData, githubData, url, githubRepoUrl) {
   const apiKey = process.env.NVIDIA_API_KEY;
   const model = process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
 
   if (!apiKey) {
     console.warn('[NVIDIA] No API key configured (set NVIDIA_API_KEY in Netlify env vars)');
-    return buildFallbackReport(pageSpeedData, url);
+    return buildFallbackReport(pageSpeedData, url, githubRepoUrl);
   }
 
   const prompt = buildAnalysisPrompt(pageSpeedData, githubData, url);
@@ -315,7 +315,7 @@ You MUST respond with ONLY valid JSON. No markdown, no code fences, no explanati
   } catch (err) {
     clearTimeout(timeoutId);
     console.warn('[NVIDIA] AI request failed or timed out:', err.message);
-    return buildFallbackReport(pageSpeedData, url);
+    return buildFallbackReport(pageSpeedData, url, githubRepoUrl);
   }
 
   if (!response.ok) {
@@ -325,7 +325,7 @@ You MUST respond with ONLY valid JSON. No markdown, no code fences, no explanati
     if (response.status === 401) throw new Error('Invalid NVIDIA API key.');
     if (response.status === 429) throw new Error('NVIDIA API rate limited. Try again later.');
 
-    return buildFallbackReport(pageSpeedData, url);
+    return buildFallbackReport(pageSpeedData, url, githubRepoUrl);
   }
 
   const data = await response.json();
@@ -333,14 +333,14 @@ You MUST respond with ONLY valid JSON. No markdown, no code fences, no explanati
 
   if (!content) {
     console.warn('[NVIDIA] Empty response');
-    return buildFallbackReport(pageSpeedData, url);
+    return buildFallbackReport(pageSpeedData, url, githubRepoUrl);
   }
 
   // --- ROBUST JSON EXTRACTION (Fix #3) ---
   const parsed = extractJSON(content);
   if (!parsed) {
     console.warn('[NVIDIA] All JSON parse strategies failed. Raw content:', content.slice(0, 300));
-    return buildFallbackReport(pageSpeedData, url);
+    return buildFallbackReport(pageSpeedData, url, githubRepoUrl);
   }
 
   return normalizeAIResponse(parsed, pageSpeedData, url, model);
@@ -561,11 +561,11 @@ function normalizeAIResponse(aiData, pageSpeedData, url, model = '') {
   };
 }
 
-function buildFallbackReport(pageSpeedData, url) {
+function buildFallbackReport(pageSpeedData, url, githubRepoUrl) {
   const domain = extractDomain(url);
   const overall = getPageSpeedAverage(pageSpeedData);
   const issues = pageSpeedData.issues || [];
-  const auditBreakdown = buildCompleteAuditBreakdown([], pageSpeedData);
+  const auditBreakdown = buildCompleteAuditBreakdown([], pageSpeedData, githubRepoUrl);
 
   const recs = pageSpeedData.recommendations || [];
   const rawFixPrompts = recs.map((rec) => ({
@@ -607,7 +607,7 @@ function buildFallbackReport(pageSpeedData, url) {
   };
 }
 
-function buildCompleteAuditBreakdown(items, pageSpeedData) {
+function buildCompleteAuditBreakdown(items, pageSpeedData, githubRepoUrl) {
   const scores = pageSpeedData.scores || {};
   const modules = pageSpeedData.modules || [];
   const issues = pageSpeedData.issues || [];
@@ -625,7 +625,7 @@ function buildCompleteAuditBreakdown(items, pageSpeedData) {
       category: cfg.category,
       title: aiItem?.title || module?.title || cfg.title,
       score: score.toFixed(1),
-      description: aiItem?.description || module?.description || buildModuleDescription(cfg, scores, issues),
+      description: aiItem?.description || module?.description || buildModuleDescription(cfg, scores, issues, githubRepoUrl),
       source: cfg.source,
       checks,
     };
@@ -668,8 +668,11 @@ function buildIssueChecks(issues, categoryId) {
   }));
 }
 
-function buildModuleDescription(cfg, scores, issues) {
+function buildModuleDescription(cfg, scores, issues, githubRepoUrl) {
   if (!cfg.scoreKey) {
+    if (githubRepoUrl) {
+      return `GitHub repository (${githubRepoUrl.replace('https://github.com/', '')}) was linked, but the AI code review engine took too long and timed out. AI analysis skipped.`;
+    }
     return 'No source code review was available. Link a GitHub repository and configure AI analysis for code quality checks.';
   }
   const score = scores[cfg.scoreKey] ?? 0;

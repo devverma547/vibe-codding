@@ -44,10 +44,10 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
     const cleanUrl = targetUrl || 'https://your-site.com';
     const initialLogs = [`[0.00s] Initializing SiteProof AI Engine v3.0 for ${cleanUrl}`];
     if (githubRepo) {
-      initialLogs.push(`[0.05s] Linked Source Repo: ${githubRepo}`);
-      initialLogs.push(`[0.06s] GitHub code extraction will run in parallel with PageSpeed`);
+      initialLogs.push(`[0.00s] Linked Source Repo: ${githubRepo}`);
+      initialLogs.push(`[0.00s] GitHub code extraction will run in parallel with PageSpeed`);
     }
-    initialLogs.push(`[0.10s] AI analysis will use the configured server model if available`);
+    initialLogs.push(`[0.00s] AI analysis will use the configured server model if available`);
     setLogs(initialLogs);
 
     const startTime = Date.now();
