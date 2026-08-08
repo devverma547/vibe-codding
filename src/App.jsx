@@ -9,22 +9,46 @@ import LoadingScreen from './components/common/LoadingScreen';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 
-// Pages (Lazy Loaded for Route-Level Code Splitting)
-const LandingPage = lazy(() => import('./pages/landing/LandingPage'));
-const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
-const SignupPage = lazy(() => import('./pages/auth/SignupPage'));
-const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
-const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'));
-const AuthCallback = lazy(() => import('./pages/auth/AuthCallback'));
-const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
-const HistoryPage = lazy(() => import('./pages/history/HistoryPage'));
-const AboutPage = lazy(() => import('./pages/about/AboutPage'));
-const PricingPage = lazy(() => import('./pages/pricing/PricingPage'));
-const ContactPage = lazy(() => import('./pages/contact/ContactPage'));
-const ReportPage = lazy(() => import('./pages/report/ReportPage'));
-const SampleReportPage = lazy(() => import('./pages/report/SampleReportPage'));
-const NotFoundPage = lazy(() => import('./pages/errors/NotFoundPage'));
+/**
+ * Helper to auto-retry dynamic module imports if a new build deployment invalidated chunk hashes
+ */
+function lazyWithRetry(componentImport) {
+  return lazy(async () => {
+    const pageRefreshed = JSON.parse(
+      sessionStorage.getItem('page_refreshed_for_chunk_error') || 'false'
+    );
+
+    try {
+      const component = await componentImport();
+      sessionStorage.setItem('page_refreshed_for_chunk_error', 'false');
+      return component;
+    } catch (error) {
+      if (!pageRefreshed) {
+        sessionStorage.setItem('page_refreshed_for_chunk_error', 'true');
+        window.location.reload();
+        return { default: () => null };
+      }
+      throw error;
+    }
+  });
+}
+
+// Pages (Lazy Loaded with Auto-Retry for Route-Level Code Splitting)
+const LandingPage = lazyWithRetry(() => import('./pages/landing/LandingPage'));
+const LoginPage = lazyWithRetry(() => import('./pages/auth/LoginPage'));
+const SignupPage = lazyWithRetry(() => import('./pages/auth/SignupPage'));
+const ForgotPasswordPage = lazyWithRetry(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/auth/ResetPasswordPage'));
+const VerifyEmailPage = lazyWithRetry(() => import('./pages/auth/VerifyEmailPage'));
+const AuthCallback = lazyWithRetry(() => import('./pages/auth/AuthCallback'));
+const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
+const HistoryPage = lazyWithRetry(() => import('./pages/history/HistoryPage'));
+const AboutPage = lazyWithRetry(() => import('./pages/about/AboutPage'));
+const PricingPage = lazyWithRetry(() => import('./pages/pricing/PricingPage'));
+const ContactPage = lazyWithRetry(() => import('./pages/contact/ContactPage'));
+const ReportPage = lazyWithRetry(() => import('./pages/report/ReportPage'));
+const SampleReportPage = lazyWithRetry(() => import('./pages/report/SampleReportPage'));
+const NotFoundPage = lazyWithRetry(() => import('./pages/errors/NotFoundPage'));
 
 /**
  * SiteProof Root Router
