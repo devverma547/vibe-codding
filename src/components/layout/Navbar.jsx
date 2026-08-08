@@ -92,7 +92,7 @@ export default function Navbar() {
 
           {/* CENTER TOP NAVBAR: ALL 6 LINKS */}
           <div 
-            className="flex items-center gap-3 lg:gap-6 text-sm font-medium overflow-x-auto whitespace-nowrap px-2 max-w-[50vw] [&::-webkit-scrollbar]:hidden"
+            className="hidden md:flex items-center gap-3 lg:gap-6 text-sm font-medium overflow-x-auto whitespace-nowrap px-2 max-w-[50vw] [&::-webkit-scrollbar]:hidden"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {allNavLinks.map((link) => (

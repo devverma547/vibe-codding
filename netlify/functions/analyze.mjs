@@ -284,27 +284,39 @@ async function callNvidiaAI(pageSpeedData, githubData, url) {
 
   const prompt = buildAnalysisPrompt(pageSpeedData, githubData, url);
 
-  const response = await fetch(`${NVIDIA_API_BASE}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: `You are SiteProof AI, an expert web quality auditor. You analyze websites across 13 audit modules: Security, Performance, SEO, Accessibility, Best Practices, UI/UX, Mobile Responsiveness, Content Quality, Legal Compliance, Technical Health, Business & Conversion, Code Quality, and Infrastructure.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout before Netlify kills it
+
+  let response;
+  try {
+    response = await fetch(`${NVIDIA_API_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: `You are SiteProof AI, an expert web quality auditor. You analyze websites across 13 audit modules: Security, Performance, SEO, Accessibility, Best Practices, UI/UX, Mobile Responsiveness, Content Quality, Legal Compliance, Technical Health, Business & Conversion, Code Quality, and Infrastructure.
 
 You MUST respond with ONLY valid JSON. No markdown, no code fences, no explanations outside the JSON. Your response must parse with JSON.parse().`,
-        },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 4096,
-    }),
-  });
+          },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.3,
+        max_tokens: 4096,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.warn('[NVIDIA] AI request failed or timed out:', err.message);
+    return buildFallbackReport(pageSpeedData, url);
+  }
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '');

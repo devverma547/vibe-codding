@@ -51,6 +51,7 @@ function getCategoryIcon(id) {
 function getSourceLabel(source) {
   switch (source) {
     case 'google-pagespeed': return { label: 'Google PageSpeed', icon: Globe, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
+    case 'pagespeed-fallback': return { label: 'Google/PageSpeed fallback', icon: Database, color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' };
     case 'github-code-review': return { label: 'GitHub Code Review', icon: Code, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' };
     case 'nvidia-ai': return { label: 'NVIDIA AI', icon: Sparkles, color: 'text-green-400 bg-green-500/10 border-green-500/20' };
     default: return { label: 'PageSpeed Data', icon: Database, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
@@ -123,6 +124,8 @@ export default function ReportPage() {
         const clean = reportId.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
         setDomainName(clean);
         setTargetScore(0);
+        setIsInitialLoading(false);
+        setIsRescanning(false);
       }
     }
     fetchReport();
@@ -240,7 +243,7 @@ export default function ReportPage() {
   // AI source label
   const reportSource = ai?.source === 'nvidia-ai'
     ? `NVIDIA AI${ai.model ? ` (${ai.model})` : ''} + Google PageSpeed`
-    : 'Google PageSpeed Insights';
+    : 'Google/PageSpeed fallback';
 
   // Score color
   const scoreColor = targetScore >= 80 ? '#00F5A0' : targetScore >= 60 ? '#F5A623' : '#FF4D4D';
