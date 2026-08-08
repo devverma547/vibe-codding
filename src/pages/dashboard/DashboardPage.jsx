@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Plus, ArrowUpRight } from 'lucide-react';
+import { Bell, Plus, ArrowUpRight, MessageSquare, Trash2 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import ScanModal from '../../components/scanner/ScanModal';
 import OnboardingModal from '../../components/auth/OnboardingModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { websiteService } from '../../services/database.service';
+import { websiteService, contactService } from '../../services/database.service';
 import { scannerService } from '../../services/scanner.service';
 import { supabase } from '../../config/supabase';
 
@@ -25,8 +25,11 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({ totalScans: 0, avgScore: 0, criticalIssues: 0 });
   const [trendData, setTrendData] = useState([]);
   const [bestPerformer, setBestPerformer] = useState({ name: 'None', score: 0 });
+  const [contactMessages, setContactMessages] = useState([]);
 
   useEffect(() => {
+    // Load contact messages
+    contactService.getAll().then(setContactMessages);
     if (!user) {
       setSites([]);
       setStats({ totalScans: 0, avgScore: 0, criticalIssues: 0 });
@@ -256,6 +259,73 @@ export default function DashboardPage() {
                   </div>
                 ))
               )}
+            </div>
+
+            {/* CUSTOMER FEEDBACK & BUG REPORTS INBOX */}
+            <div className="mt-8 p-6 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-[#00F5A0] flex items-center justify-center">
+                    <MessageSquare size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      Customer Feedback & Messages
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-[#00F5A0] text-xs font-mono">
+                        {contactMessages.length}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-gray-400">
+                      Messages submitted via the Contact form
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {contactMessages.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 text-center text-xs text-slate-500 dark:text-gray-400">
+                    No submitted contact messages yet. Form inputs from your site's contact page will be logged here automatically!
+                  </div>
+                ) : (
+                  contactMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#080C14] border border-slate-200 dark:border-white/5 flex flex-col gap-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">{msg.name}</span>
+                            <span className="text-[11px] text-slate-500 dark:text-gray-400">&lt;{msg.email}&gt;</span>
+                          </div>
+                          <div className="text-xs font-semibold text-emerald-600 dark:text-[#00F5A0] mt-0.5">
+                            {msg.subject}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {msg.created_at ? new Date(msg.created_at).toLocaleDateString() : 'Just now'}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              await contactService.delete(msg.id);
+                              setContactMessages(prev => prev.filter(m => m.id !== msg.id));
+                            }}
+                            title="Delete message"
+                            className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-gray-300 leading-relaxed bg-white dark:bg-black/20 p-2.5 rounded-lg border border-slate-100 dark:border-white/5">
+                        {msg.message}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
 

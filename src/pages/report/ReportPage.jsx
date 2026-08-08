@@ -206,8 +206,16 @@ export default function ReportPage() {
   // === EXTRACT DATA FROM REPORT ===
   const ai = reportData?.aiReport || null;
   
-  // Modules/audit breakdown: prefer AI data, fallback to PageSpeed modules
-  const modules = ai?.auditBreakdown || reportData?.modules || [];
+  // Modules/audit breakdown: ensure all 12 modules from reportData.modules are rendered
+  const baseModules = reportData?.modules || [];
+  const aiBreakdownMap = new Map((ai?.auditBreakdown || []).map(m => [m.id, m]));
+  const modules = baseModules.map(m => {
+    const aiMod = aiBreakdownMap.get(m.id);
+    return aiMod ? { ...m, ...aiMod } : m;
+  });
+  if (modules.length === 0 && ai?.auditBreakdown) {
+    modules.push(...ai.auditBreakdown);
+  }
   
   // Fix prompts: prefer AI data, fallback to PageSpeed recommendations
   const rawActionPlan = ai?.fixPrompts || [];

@@ -108,6 +108,104 @@
         { "status": "warn", "label": "No issues in the Issues panel in Chrome Devtools (1 issue)" },
         { "status": "pass", "label": "Uses HTTPS" }
       ]
+    },
+    {
+      "id": "codeQuality",
+      "title": "Code Quality & Architecture",
+      "score": "8.4",
+      "description": "4 check(s) passed. 1 warning.",
+      "source": "nvidia-ai",
+      "checks": [
+        { "status": "pass", "label": "Source Code Minification" },
+        { "status": "warn", "label": "Unused Code Bundles (184 KiB)" },
+        { "status": "pass", "label": "Route Splitting & Lazy Loading" },
+        { "status": "pass", "label": "Strict Linting & Type Checks" },
+        { "status": "pass", "label": "Component Reusability Index" }
+      ]
+    },
+    {
+      "id": "mobileUx",
+      "title": "Mobile & Responsive UX",
+      "score": "8.8",
+      "description": "5 check(s) passed.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "pass", "label": "Touch Target Sizing (> 48px)" },
+        { "status": "pass", "label": "No Horizontal Overflow" },
+        { "status": "pass", "label": "Responsive Font Scaling" },
+        { "status": "pass", "label": "Viewport Scale Constraints" },
+        { "status": "pass", "label": "Mobile Orientation Adaptation" }
+      ]
+    },
+    {
+      "id": "privacyData",
+      "title": "Privacy & Data Security",
+      "score": "8.0",
+      "description": "4 check(s) passed. 1 warning.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "pass", "label": "Form Input Sanitization" },
+        { "status": "pass", "label": "Secure Cookie SameSite Flags" },
+        { "status": "warn", "label": "Cookie Consent Banner Detection" },
+        { "status": "pass", "label": "No Secret Tokens in Frontend Code" },
+        { "status": "pass", "label": "Third-Party Script Isolation" }
+      ]
+    },
+    {
+      "id": "pwaOffline",
+      "title": "PWA & Offline Readiness",
+      "score": "6.5",
+      "description": "3 check(s) passed. 2 warnings.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "warn", "label": "Service Worker Registration" },
+        { "status": "warn", "label": "Web App Manifest (manifest.json)" },
+        { "status": "pass", "label": "Favicon & Apple Touch Icons" },
+        { "status": "pass", "label": "Theme Color Meta Tag" },
+        { "status": "pass", "label": "Responsive Viewport Meta" }
+      ]
+    },
+    {
+      "id": "uiRender",
+      "title": "UI/UX & Render Stability",
+      "score": "8.9",
+      "description": "5 check(s) passed.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "pass", "label": "Font Display Swap Strategy" },
+        { "status": "pass", "label": "Above-the-Fold Critical CSS" },
+        { "status": "pass", "label": "Zero Unhandled Layout Shifts" },
+        { "status": "pass", "label": "Smooth Animation Frame Rates" },
+        { "status": "pass", "label": "Consistent Design Tokens" }
+      ]
+    },
+    {
+      "id": "infrastructure",
+      "title": "Server & Network Infrastructure",
+      "score": "8.2",
+      "description": "4 check(s) passed. 1 warning.",
+      "source": "google-pagespeed",
+      "checks": [
+        { "status": "pass", "label": "Gzip / Brotli Compression" },
+        { "status": "pass", "label": "HTTP/2 Protocol Enabled" },
+        { "status": "warn", "label": "Edge CDN Cache Header Optimization" },
+        { "status": "pass", "label": "Fast TTFB (< 400ms)" },
+        { "status": "pass", "label": "DNS Connection Time" }
+      ]
+    },
+    {
+      "id": "aiPrompt",
+      "title": "AI Prompt & Remediation Readiness",
+      "score": "9.5",
+      "description": "5 check(s) passed.",
+      "source": "nvidia-ai",
+      "checks": [
+        { "status": "pass", "label": "Automated Fix Prompts Generated" },
+        { "status": "pass", "label": "Severity-Ranked Action Plan" },
+        { "status": "pass", "label": "Code Remediations Available" },
+        { "status": "pass", "label": "One-Click Prompt Copying" },
+        { "status": "pass", "label": "GitHub Repo Extraction Enabled" }
+      ]
     }
   ],
   "recommendations": [

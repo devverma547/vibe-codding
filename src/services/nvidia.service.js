@@ -107,30 +107,34 @@ function mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData, github
     ...(codeReport?.warnings || []),
   ];
 
-  // 1. Audit Breakdown (5 PageSpeed modules + 1 Code Quality module)
-  const pageSpeedBreakdown = (pageSpeedReport.auditBreakdown || []).filter(
-    (m) => String(m.id || '').toLowerCase() !== 'code-quality'
-  );
+  // 1. Audit Breakdown (Merge 12 modules from pageSpeedData with AI recommendations)
+  const base12Modules = pageSpeedData?.modules || [];
+  const aiBreakdownMap = new Map((pageSpeedReport.auditBreakdown || []).map((m) => [m.id, m]));
+  
+  const auditBreakdown = base12Modules.map((baseMod) => {
+    const aiMod = aiBreakdownMap.get(baseMod.id);
+    if (aiMod) {
+      return {
+        ...baseMod,
+        ...aiMod,
+        title: baseMod.title || aiMod.title,
+        checks: aiMod.checks && aiMod.checks.length > 0 ? aiMod.checks : baseMod.checks,
+      };
+    }
+    return baseMod;
+  });
 
-  const codeQualityModule = codeReport?.auditBreakdown?.[0] || {
-    id: 'code-quality',
-    category: 'Code Quality',
-    title: 'Code Quality',
-    score: '0.0',
-    description: githubRepoUrl
-      ? `GitHub repository (${githubRepoUrl.replace('https://github.com/', '')}) code analysis was unavailable or timed out.`
-      : 'No source code review was available. Link a GitHub repository and configure AI analysis for code quality checks.',
-    source: 'github-code-review',
-    checks: githubRepoUrl
-      ? [{ status: 'warn', label: 'Code review timed out or failed — rest of report uses PageSpeed metrics' }]
-      : [],
-  };
-
-  if (githubRepoUrl && (!codeReport || codeReport.source === 'code-fallback')) {
-    warnings.push('GitHub code review was unavailable or timed out — report includes PageSpeed analysis only.');
+  // If code quality module exists from GitHub code report, update codeQuality module in breakdown
+  if (codeReport?.auditBreakdown?.[0]) {
+    const codeModIdx = auditBreakdown.findIndex((m) => m.id === 'codeQuality' || m.id === 'code-quality');
+    if (codeModIdx !== -1) {
+      auditBreakdown[codeModIdx] = {
+        ...auditBreakdown[codeModIdx],
+        score: codeReport.auditBreakdown[0].score || auditBreakdown[codeModIdx].score,
+        checks: [...(codeReport.auditBreakdown[0].checks || []), ...(auditBreakdown[codeModIdx].checks || [])].slice(0, 5),
+      };
+    }
   }
-
-  const auditBreakdown = [...pageSpeedBreakdown, codeQualityModule];
 
   // 2. Fix Prompts (combine + sort by priority)
   const combinedFixPrompts = [

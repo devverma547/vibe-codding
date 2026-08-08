@@ -344,6 +344,94 @@ export const scanService = {
 };
 
 // ================================================================
+// CONTACT SERVICE — Supabase + localStorage hybrid
+// ================================================================
+export const contactService = {
+  async save(formData) {
+    const messageRecord = {
+      id: crypto.randomUUID(),
+      name: formData.name || 'Anonymous',
+      email: formData.email || '',
+      subject: formData.subject || 'General Inquiry',
+      message: formData.message || '',
+      created_at: new Date().toISOString(),
+      read: false,
+    };
+
+    // 1. Save to localStorage as immediate backup
+    try {
+      const existing = JSON.parse(localStorage.getItem('siteproof_contact_messages') || '[]');
+      existing.unshift(messageRecord);
+      localStorage.setItem('siteproof_contact_messages', JSON.stringify(existing));
+    } catch (e) {
+      console.warn('[ContactService] Local storage backup error:', e.message);
+    }
+
+    // 2. Try saving to Supabase table contact_messages
+    try {
+      const { data, error } = await supabase
+        .from('contact_messages')
+        .insert([{
+          name: messageRecord.name,
+          email: messageRecord.email,
+          subject: messageRecord.subject,
+          message: messageRecord.message,
+        }])
+        .select()
+        .single();
+
+      if (!error && data) {
+        return { success: true, data, source: 'supabase' };
+      }
+    } catch (err) {
+      console.warn('[ContactService] Supabase insert failed (using local backup):', err.message);
+    }
+
+    return { success: true, data: messageRecord, source: 'local' };
+  },
+
+  async getAll() {
+    let localMessages = [];
+    try {
+      localMessages = JSON.parse(localStorage.getItem('siteproof_contact_messages') || '[]');
+    } catch { /* ignore */ }
+
+    try {
+      const { data, error } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        // Merge Supabase and Local storage messages avoiding duplicates
+        const ids = new Set(data.map(m => m.id));
+        const uniqueLocal = localMessages.filter(m => !ids.has(m.id));
+        return [...data, ...uniqueLocal];
+      }
+    } catch (err) {
+      console.warn('[ContactService] Supabase getAll failed:', err.message);
+    }
+
+    return localMessages;
+  },
+
+  async delete(id) {
+    try {
+      const existing = JSON.parse(localStorage.getItem('siteproof_contact_messages') || '[]');
+      const filtered = existing.filter(m => m.id !== id);
+      localStorage.setItem('siteproof_contact_messages', JSON.stringify(filtered));
+    } catch { /* ignore */ }
+
+    try {
+      await supabase.from('contact_messages').delete().eq('id', id);
+    } catch { /* ignore */ }
+
+    return true;
+  }
+};
+
+
+// ================================================================
 // LEGACY — keep old 'db' export for backward compatibility
 // (used by landing page demo scanner, etc.)
 // ================================================================

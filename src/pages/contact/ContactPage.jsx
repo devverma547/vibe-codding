@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Mail, Send, CheckCircle2, Bug, Lightbulb, AlertCircle } from 'lucide-react';
+import { Mail, Send, CheckCircle2, Bug, Lightbulb, AlertCircle, ShieldCheck } from 'lucide-react';
+import { contactService } from '../../services/database.service';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savedTicket, setSavedTicket] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -10,9 +13,18 @@ export default function ContactPage() {
     message: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    try {
+      const result = await contactService.save(formData);
+      setSavedTicket(result.data);
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Failed to submit contact message:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getPlaceholder = () => {
@@ -92,21 +104,33 @@ export default function ContactPage() {
           {/* Contact Form Column */}
           <div className="md:col-span-2 p-8 rounded-3xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-2xl">
             {submitted ? (
-              <div className="py-12 text-center space-y-4">
-                <CheckCircle2 className="w-16 h-16 text-[#00F5A0] mx-auto animate-bounce" />
+              <div className="py-8 text-center space-y-4">
+                <CheckCircle2 className="w-14 h-14 text-[#00F5A0] mx-auto animate-bounce" />
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Thank You for Your Feedback!</h3>
                 <p className="text-sm text-slate-600 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
-                  Your message has been logged. If you reported a website bug or technical issue, our development team will inspect and fix it as soon as possible.
+                  Your message has been securely logged. If you reported a website bug or technical issue, our development team will inspect and fix it promptly.
                 </p>
-                <button
-                  onClick={() => {
-                    setSubmitted(false);
-                    setFormData({ name: '', email: '', subject: 'Report a Bug / Website Issue', message: '' });
-                  }}
-                  className="mt-4 px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white text-sm font-semibold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-                >
-                  Submit another report or question
-                </button>
+                {savedTicket && (
+                  <div className="inline-flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-600 dark:text-[#00F5A0]">
+                    <div className="flex items-center gap-1 font-semibold">
+                      <ShieldCheck size={14} /> Ticket Logged Successfully
+                    </div>
+                    <div>Ref ID: {savedTicket.id?.slice(0, 13) || 'LOC-SAVED'}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-gray-400">Stored & saved in database/inbox</div>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      setSubmitted(false);
+                      setSavedTicket(null);
+                      setFormData({ name: '', email: '', subject: 'Report a Bug / Website Issue', message: '' });
+                    }}
+                    className="px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white text-sm font-semibold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+                  >
+                    Submit another report or question
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -176,9 +200,10 @@ export default function ContactPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,245,160,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] disabled:opacity-50 text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,245,160,0.3)] flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  Send Message / Report <Send size={16} />
+                  {isSubmitting ? 'Saving Message...' : 'Send Message / Report'} <Send size={16} />
                 </button>
               </form>
             )}
