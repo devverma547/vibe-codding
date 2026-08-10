@@ -110,15 +110,7 @@ export default function ContactPage() {
                 <p className="text-sm text-slate-600 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
                   Your message has been securely logged. If you reported a website bug or technical issue, our development team will inspect and fix it promptly.
                 </p>
-                {savedTicket && (
-                  <div className="inline-flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono text-emerald-600 dark:text-[#00F5A0]">
-                    <div className="flex items-center gap-1 font-semibold">
-                      <ShieldCheck size={14} /> Ticket Logged Successfully
-                    </div>
-                    <div>Ref ID: {savedTicket.id?.slice(0, 13) || 'LOC-SAVED'}</div>
-                    <div className="text-[10px] text-slate-500 dark:text-gray-400">Stored & saved in database/inbox</div>
-                  </div>
-                )}
+
                 <div className="pt-2">
                   <button
                     onClick={() => {
