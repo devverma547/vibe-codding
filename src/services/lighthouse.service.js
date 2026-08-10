@@ -31,15 +31,39 @@ export async function runLighthouseAnalysis(url, strategy = 'mobile') {
     const response = await fetch(`${PAGESPEED_API}?${params.toString()}`);
 
     if (!response.ok) {
-      console.warn(`[Lighthouse] PageSpeed API returned status ${response.status}. Using synthetic audit engine.`);
-      return runSyntheticAnalysis(url, response.status === 429 ? 'Google PageSpeed Rate Limit Reached' : 'API Timeout / Restricted');
+      // Only use synthetic fallback for rate-limit (429). All other failures = real error.
+      if (response.status === 429) {
+        console.warn('[Lighthouse] PageSpeed API rate-limited (429). Using synthetic fallback.');
+        return runSyntheticAnalysis(url, 'Google PageSpeed Rate Limit Reached');
+      }
+
+      // Try to extract a meaningful error message from the API response
+      let apiErrorMsg = `Google PageSpeed returned an error (status ${response.status}).`;
+      try {
+        const errBody = await response.json();
+        if (errBody?.error?.message) {
+          apiErrorMsg = errBody.error.message;
+        }
+      } catch { /* ignore JSON parse errors */ }
+
+      console.warn(`[Lighthouse] PageSpeed API error: ${apiErrorMsg}`);
+      throw new Error(
+        `Could not analyze this website. ${apiErrorMsg} Please check the URL is correct and the site is publicly accessible.`
+      );
     }
 
     const data = await response.json();
     return parseLighthouseResults(data, url);
   } catch (err) {
-    console.warn('[Lighthouse] API request failed, falling back to synthetic scan engine:', err.message);
-    return runSyntheticAnalysis(url, 'Network Request Fallback');
+    // If this is already our custom error, re-throw it
+    if (err.message && err.message.startsWith('Could not analyze')) {
+      throw err;
+    }
+    // Network-level failure (DNS resolution failed, connection refused, etc.)
+    console.warn('[Lighthouse] Network request failed:', err.message);
+    throw new Error(
+      'Could not reach this website. Please check the URL is correct and make sure the site is live and publicly accessible.'
+    );
   }
 }
 

@@ -82,7 +82,7 @@ export const scannerService = {
         }
         return {
           success: false,
-          error: lighthouseError.message || 'Failed to analyze website. Make sure the URL is publicly accessible.',
+          error: lighthouseError.message || 'Failed to analyze website. Please check the URL is correct and the site is publicly accessible.',
         };
       }
 

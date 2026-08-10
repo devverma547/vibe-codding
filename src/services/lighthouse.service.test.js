@@ -7,17 +7,13 @@ describe('Lighthouse Service', () => {
     global.fetch = vi.fn();
   });
 
-  it('runs synthetic analysis when fetch fails', async () => {
+  it('throws an error when fetch fails (unreachable site)', async () => {
     global.fetch.mockRejectedValueOnce(new Error('Network error'));
     
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const result = await runLighthouseAnalysis('https://example.com');
-
-    expect(result).toBeDefined();
-    expect(result.isSynthetic).toBe(true);
-    expect(result.fallbackReason).toBe('Network Request Fallback');
-    expect(result.overallScore).toBeDefined();
+    await expect(runLighthouseAnalysis('https://example.com'))
+      .rejects.toThrow('Could not reach this website');
     
     consoleSpy.mockRestore();
   });

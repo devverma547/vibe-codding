@@ -331,8 +331,25 @@ export default function ReportPage() {
 
       <main className={`flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 space-y-10 transition-opacity duration-700 ${isInitialLoading ? 'opacity-0' : 'opacity-100'}`}>
         
+        {/* SYNTHETIC DATA WARNING — shown when report is estimated (rate-limit fallback) */}
+        {reportData?.isSynthetic && (
+          <div className="flex items-start gap-3 px-5 py-4 rounded-2xl bg-red-500/5 dark:bg-red-500/10 border-2 border-red-500/30 text-red-700 dark:text-red-300">
+            <AlertTriangle size={22} className="shrink-0 text-red-500 mt-0.5" />
+            <div className="text-sm leading-relaxed space-y-1">
+              <span className="font-bold text-base">⚠️ Estimated Report — Not Real Scan Data</span>
+              <p className="text-xs">
+                Google PageSpeed was temporarily rate-limited. The scores and checks shown below are <strong>estimates only</strong>, not actual scan results from your website.
+                {reportData.fallbackReason && <> (Reason: {reportData.fallbackReason})</>}
+              </p>
+              <p className="text-xs text-red-600/70 dark:text-red-400/50">
+                Please re-scan later to get accurate, real results from Google PageSpeed Insights.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* DATA SOURCE TRANSPARENCY BANNER */}
-        {reportData && (
+        {reportData && !reportData.isSynthetic && (
           <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300">
             <Info size={18} className="shrink-0 text-blue-500" />
             <p className="text-xs leading-relaxed">
