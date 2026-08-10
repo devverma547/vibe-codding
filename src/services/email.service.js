@@ -19,6 +19,7 @@ export const emailService = {
           access_key: '127a9009-05ce-4079-90b0-d5c5c3666247',
           name: contactData.name,
           email: contactData.email,
+          Topic: contactData.subject || 'Not specified',
           subject: `[SiteProof Contact] ${contactData.subject || 'New Message'}`,
           message: contactData.message,
           from_name: 'SiteProof App'
