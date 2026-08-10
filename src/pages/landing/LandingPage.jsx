@@ -251,7 +251,7 @@ export default function LandingPage() {
             >
               <form 
                 onSubmit={handleStartScan}
-                className="max-w-xl mx-auto flex flex-col gap-3 p-3 rounded-2xl bg-white dark:bg-[#0F1726]/90 border border-slate-300 dark:border-white/10 shadow-[0_0_40px_rgba(0,245,160,0.1)] focus-within:border-[#00F5A0]/50 transition-all backdrop-blur-sm"
+                className="max-w-xl mx-auto flex flex-col gap-3 p-3 rounded-2xl bg-white/70 dark:bg-[#0F1726]/70 border border-slate-300 dark:border-white/10 shadow-[0_0_40px_rgba(0,245,160,0.15)] ring-1 ring-white/20 dark:ring-[#00F5A0]/20 focus-within:ring-[#00F5A0]/50 focus-within:border-[#00F5A0]/50 transition-all backdrop-blur-2xl"
               >
                 <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#080C14]/50 border border-slate-200 dark:border-white/5">
                   <span className="text-slate-400 dark:text-gray-500 font-mono text-sm font-semibold">https://</span>
@@ -333,7 +333,7 @@ export default function LandingPage() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 + i * 0.1 }}
-                    whileHover={{ scale: 1.03, borderColor: 'rgba(0,245,160,0.3)' }}
+                    whileHover={{ scale: 1.03, y: -4, borderColor: 'rgba(0,245,160,0.4)', boxShadow: '0 10px 25px -5px rgba(0,245,160,0.2)' }}
                     className="p-4 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 text-center transition-all shadow-sm dark:shadow-none"
                   >
                     <div className="text-xl sm:text-2xl font-extrabold text-[#00F5A0] font-display">{stat.component}</div>
@@ -440,9 +440,9 @@ export default function LandingPage() {
                   variants={itemVariants}
                 >
                   <TiltCard className="h-full">
-                    <div className="p-6 rounded-2xl bg-white dark:bg-[#0D1527]/60 border border-slate-200 dark:border-white/5 hover:border-[#00F5A0]/30 transition-all group shadow-sm dark:shadow-lg h-full relative">
-                      <span className="absolute top-4 right-4 text-[10px] font-mono font-bold text-slate-400 dark:text-gray-600">{mod.num}</span>
-                      <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 w-fit group-hover:bg-[#00F5A0]/10 transition-colors">
+                    <div className="p-6 rounded-2xl bg-white dark:bg-[#0D1527]/60 border border-slate-200 dark:border-white/5 hover:border-[#00F5A0]/50 hover:shadow-[0_0_20px_rgba(0,245,160,0.15)] transition-all duration-300 group shadow-sm dark:shadow-lg h-full relative">
+                      <span className="absolute top-4 right-4 text-[10px] font-mono font-bold text-slate-400 dark:text-gray-600 group-hover:text-[#00F5A0] transition-colors">{mod.num}</span>
+                      <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-white/5 w-fit group-hover:bg-[#00F5A0]/10 group-hover:scale-110 transition-all duration-300">
                         {mod.icon}
                       </div>
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-4 group-hover:text-[#00F5A0] transition-colors">
@@ -480,12 +480,19 @@ export default function LandingPage() {
                 <button
                   key={key}
                   onClick={() => setActivePersona(key)}
-                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all capitalize cursor-pointer ${
+                  className={`relative flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all capitalize cursor-pointer z-10 ${
                     activePersona === key 
-                      ? 'bg-[#00F5A0] text-slate-950 shadow-md' 
+                      ? 'text-slate-950' 
                       : 'text-slate-700 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
+                  {activePersona === key && (
+                    <motion.div
+                      layoutId="activeTabBackground"
+                      className="absolute inset-0 bg-[#00F5A0] rounded-lg shadow-md -z-10"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
                   {key === 'vibe-coders' ? '⚡ AI Coders' : key === 'agencies' ? '🏢 Agencies' : '🚀 Founders'}
                 </button>
               ))}
