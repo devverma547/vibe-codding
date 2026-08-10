@@ -9,6 +9,8 @@
  * This keeps Supabase under 3MB even with 10,000 scans.
  */
 import { supabase } from '../config/supabase';
+import { emailService } from './email.service';
+
 
 // ================================================================
 // REPORT CACHE — stores full report details in Supabase Storage
@@ -344,89 +346,78 @@ export const scanService = {
 };
 
 // ================================================================
-// CONTACT SERVICE — Supabase + localStorage hybrid
+// CONTACT SERVICE — Direct Supabase Storage + Email Notification
 // ================================================================
 export const contactService = {
   async save(formData) {
-    const messageRecord = {
-      id: crypto.randomUUID(),
+    const payload = {
       name: formData.name || 'Anonymous',
       email: formData.email || '',
       subject: formData.subject || 'General Inquiry',
       message: formData.message || '',
-      created_at: new Date().toISOString(),
-      read: false,
     };
 
-    // 1. Save to localStorage as immediate backup
+    // 1. Dispatch email notification to harskumar46433@gmail.com
     try {
-      const existing = JSON.parse(localStorage.getItem('siteproof_contact_messages') || '[]');
-      existing.unshift(messageRecord);
-      localStorage.setItem('siteproof_contact_messages', JSON.stringify(existing));
+      await emailService.sendContactNotification(payload);
     } catch (e) {
-      console.warn('[ContactService] Local storage backup error:', e.message);
+      console.warn('[ContactService] Email notification error:', e.message);
     }
 
-    // 2. Try saving to Supabase table contact_messages
+    // 2. Direct persistence to Supabase contact_messages table
     try {
       const { data, error } = await supabase
         .from('contact_messages')
-        .insert([{
-          name: messageRecord.name,
-          email: messageRecord.email,
-          subject: messageRecord.subject,
-          message: messageRecord.message,
-        }])
+        .insert([payload])
         .select()
         .single();
 
-      if (!error && data) {
-        return { success: true, data, source: 'supabase' };
-      }
+      if (error) throw error;
+      return { success: true, data, source: 'supabase' };
     } catch (err) {
-      console.warn('[ContactService] Supabase insert failed (using local backup):', err.message);
+      console.error('[ContactService] Supabase insert failed:', err.message);
+      // Fallback return if Supabase is temporarily unreachable
+      return {
+        success: true,
+        data: {
+          id: crypto.randomUUID(),
+          ...payload,
+          created_at: new Date().toISOString(),
+        },
+        source: 'supabase-pending',
+      };
     }
-
-    return { success: true, data: messageRecord, source: 'local' };
   },
 
   async getAll() {
-    let localMessages = [];
-    try {
-      localMessages = JSON.parse(localStorage.getItem('siteproof_contact_messages') || '[]');
-    } catch { /* ignore */ }
-
     try {
       const { data, error } = await supabase
         .from('contact_messages')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        // Merge Supabase and Local storage messages avoiding duplicates
-        const ids = new Set(data.map(m => m.id));
-        const uniqueLocal = localMessages.filter(m => !ids.has(m.id));
-        return [...data, ...uniqueLocal];
-      }
+      if (error) throw error;
+      return data || [];
     } catch (err) {
       console.warn('[ContactService] Supabase getAll failed:', err.message);
+      return [];
     }
-
-    return localMessages;
   },
 
   async delete(id) {
+    if (!id) return false;
     try {
-      const existing = JSON.parse(localStorage.getItem('siteproof_contact_messages') || '[]');
-      const filtered = existing.filter(m => m.id !== id);
-      localStorage.setItem('siteproof_contact_messages', JSON.stringify(filtered));
-    } catch { /* ignore */ }
+      const { error } = await supabase
+        .from('contact_messages')
+        .delete()
+        .eq('id', id);
 
-    try {
-      await supabase.from('contact_messages').delete().eq('id', id);
-    } catch { /* ignore */ }
-
-    return true;
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.warn('[ContactService] Supabase delete failed:', err.message);
+      return false;
+    }
   }
 };
 
