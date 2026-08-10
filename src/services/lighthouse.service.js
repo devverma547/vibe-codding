@@ -313,159 +313,123 @@ function buildCategoryAuditMap(categories) {
 }
 
 /**
- * Build all 12 display modules for the report page
+ * Build all 12 display modules for the report page.
+ * - 5 real modules: checks are built from actual PageSpeed audit results
+ * - 7 coming soon modules: marked with comingSoon flag, no fake data
  */
-function buildModules(scores, audits = {}, _categories = {}) {
+function buildModules(scores, audits = {}, categories = {}) {
   const isHttps = audits['is-on-https']?.score === 1 || scores.security >= 70;
 
-  const moduleConfigs = [
+  /**
+   * Build REAL check items from actual PageSpeed audit data for a given category
+   */
+  function buildRealChecks(categoryKey, fallbackScore) {
+    const cat = categories[categoryKey];
+    if (!cat || !cat.auditRefs) {
+      return [
+        { status: fallbackScore >= 90 ? 'pass' : fallbackScore >= 50 ? 'warn' : 'fail', label: `Overall ${categoryKey} score: ${fallbackScore}/100` }
+      ];
+    }
+
+    const checks = [];
+    for (const ref of cat.auditRefs) {
+      const audit = audits[ref.id];
+      if (!audit || audit.scoreDisplayMode === 'notApplicable' || audit.scoreDisplayMode === 'informative') continue;
+      if (audit.score === null || audit.score === undefined) continue;
+
+      const status = audit.score >= 0.9 ? 'pass' : audit.score >= 0.5 ? 'warn' : 'fail';
+      const label = (audit.title || ref.id) + (audit.displayValue ? ` (${audit.displayValue})` : '');
+      checks.push({ status, label });
+    }
+
+    // Sort: failed first, then warnings, then passes
+    const order = { fail: 0, warn: 1, pass: 2 };
+    checks.sort((a, b) => (order[a.status] ?? 1) - (order[b.status] ?? 1));
+
+    return checks.slice(0, 5);
+  }
+
+  /**
+   * Build security checks from HTTPS + best-practices audits
+   */
+  function buildSecurityChecks() {
+    const checks = [];
+    checks.push({ status: isHttps ? 'pass' : 'fail', label: 'HTTPS / SSL Encryption Enabled' });
+
+    const securityAuditIds = ['redirects-http', 'no-vulnerable-libraries', 'csp-xss', 'geolocation-on-start'];
+    for (const auditId of securityAuditIds) {
+      const audit = audits[auditId];
+      if (!audit || audit.score === null || audit.score === undefined) continue;
+      const status = audit.score >= 0.9 ? 'pass' : audit.score >= 0.5 ? 'warn' : 'fail';
+      checks.push({ status, label: audit.title + (audit.displayValue ? ` (${audit.displayValue})` : '') });
+    }
+
+    if (checks.length < 2) {
+      checks.push({ status: 'warn', label: 'Security headers could not be fully verified' });
+    }
+
+    return checks.slice(0, 5);
+  }
+
+  // ===== 5 REAL MODULES (backed by Google PageSpeed data) =====
+  const realModules = [
     {
       id: 'security',
       title: 'Security & Security Headers',
       scoreVal: scores.security || 80,
-      checks: [
-        { status: isHttps ? 'pass' : 'fail', label: 'HTTPS / SSL Encryption Enabled' },
-        { status: isHttps ? 'pass' : 'warn', label: 'HTTP to HTTPS Auto-Redirect' },
-        { status: 'warn', label: 'Content Security Policy (CSP) Header' },
-        { status: 'pass', label: 'Cross-Origin Resource Sharing (CORS) Policy' },
-        { status: 'pass', label: 'No Known Vulnerable JS Libraries' },
-      ],
+      checks: buildSecurityChecks(),
+      comingSoon: false,
     },
     {
       id: 'performance',
       title: 'Performance & Core Web Vitals',
       scoreVal: scores.performance || 75,
-      checks: [
-        { status: scores.performance > 70 ? 'pass' : 'warn', label: 'Largest Contentful Paint (LCP < 2.5s)' },
-        { status: 'pass', label: 'Cumulative Layout Shift (CLS < 0.1)' },
-        { status: 'pass', label: 'First Contentful Paint (FCP < 1.8s)' },
-        { status: 'warn', label: 'Interaction to Next Paint (INP)' },
-        { status: 'pass', label: 'Server Response Time (TTFB < 600ms)' },
-      ],
+      checks: buildRealChecks('performance', scores.performance || 75),
+      comingSoon: false,
     },
     {
       id: 'seo',
       title: 'SEO & Indexing Metadata',
       scoreVal: scores.seo || 85,
-      checks: [
-        { status: 'pass', label: 'Page Title & Meta Description Present' },
-        { status: 'pass', label: 'OpenGraph & Twitter Card Tags' },
-        { status: 'pass', label: 'Canonical URL Defined' },
-        { status: 'pass', label: 'Robots.txt & Sitemap Available' },
-        { status: 'pass', label: 'Mobile-Friendly Viewport Tag' },
-      ],
+      checks: buildRealChecks('seo', scores.seo || 85),
+      comingSoon: false,
     },
     {
       id: 'accessibility',
       title: 'Accessibility & ARIA Compliance',
       scoreVal: scores.accessibility || 80,
-      checks: [
-        { status: 'pass', label: 'Color Contrast Ratio (WCAG AA)' },
-        { status: 'warn', label: 'Image Alt Attribute Coverage' },
-        { status: 'pass', label: 'Keyboard Focus Trapping & Navigation' },
-        { status: 'pass', label: 'ARIA Roles & Landmarks' },
-        { status: 'pass', label: 'Heading Hierarchy (H1 - H6)' },
-      ],
+      checks: buildRealChecks('accessibility', scores.accessibility || 80),
+      comingSoon: false,
     },
     {
       id: 'bestPractices',
       title: 'Best Practices & Modern Web Standards',
       scoreVal: scores.bestPractices || 85,
-      checks: [
-        { status: 'pass', label: 'Uses Modern Image Formats (WebP/AVIF)' },
-        { status: 'pass', label: 'No Browser Console Errors' },
-        { status: 'pass', label: 'Avoids Deprecated Web APIs' },
-        { status: 'pass', label: 'Correct Aspect Ratios on Media' },
-        { status: 'pass', label: 'Valid HTML5 Doctype' },
-      ],
-    },
-    {
-      id: 'codeQuality',
-      title: 'Code Quality & Bundle Architecture',
-      scoreVal: scores.codeQuality || Math.round((scores.performance + scores.bestPractices) / 2),
-      checks: [
-        { status: 'pass', label: 'Source Code Minification' },
-        { status: 'warn', label: 'Tree-Shaking & Dead Code Removal' },
-        { status: 'pass', label: 'Dynamic Import & Route Splitting' },
-        { status: 'pass', label: 'Strict Type Checking & Linting' },
-        { status: 'pass', label: 'Component Reusability Index' },
-      ],
-    },
-    {
-      id: 'mobileUx',
-      title: 'Mobile & Responsive UX',
-      scoreVal: scores.mobileUx || Math.round((scores.accessibility + scores.performance) / 2),
-      checks: [
-        { status: 'pass', label: 'Touch Target Sizing (> 48px)' },
-        { status: 'pass', label: 'No Horizontal Overflow Scrolling' },
-        { status: 'pass', label: 'Responsive Font Scaling' },
-        { status: 'pass', label: 'Mobile Orientation Adaptability' },
-        { status: 'pass', label: 'Mobile Viewport Scale Constraints' },
-      ],
-    },
-    {
-      id: 'privacyData',
-      title: 'Privacy & Data Security',
-      scoreVal: scores.privacyData || Math.round((scores.security + scores.bestPractices) / 2),
-      checks: [
-        { status: 'pass', label: 'Secure SameSite Cookie Flags' },
-        { status: 'pass', label: 'Form Input Sanitization' },
-        { status: 'warn', label: 'Analytics & Tracker Consent Policy' },
-        { status: 'pass', label: 'No Sensitive Token Exposure in URLs' },
-        { status: 'pass', label: 'Third-Party Script Isolation' },
-      ],
-    },
-    {
-      id: 'pwaOffline',
-      title: 'PWA & Offline Readiness',
-      scoreVal: scores.pwaOffline || 65,
-      checks: [
-        { status: 'warn', label: 'Web App Manifest (manifest.json)' },
-        { status: 'warn', label: 'Service Worker Registration' },
-        { status: 'pass', label: 'Favicon & Apple Touch Icons' },
-        { status: 'warn', label: 'Offline Fallback Page' },
-        { status: 'pass', label: 'Theme Color Meta Tag' },
-      ],
-    },
-    {
-      id: 'uiRender',
-      title: 'UI/UX & Render Stability',
-      scoreVal: scores.uiRender || Math.round((scores.performance + scores.seo) / 2),
-      checks: [
-        { status: 'pass', label: 'Font Display Swap Strategy' },
-        { status: 'pass', label: 'Above-the-Fold Render CSS' },
-        { status: 'pass', label: 'Smooth Animation Frame Rates (60fps)' },
-        { status: 'pass', label: 'Zero Unhandled Layout Shifts' },
-        { status: 'pass', label: 'Consistent Color System Usage' },
-      ],
-    },
-    {
-      id: 'infrastructure',
-      title: 'Server & Network Infrastructure',
-      scoreVal: scores.infrastructure || Math.round((scores.performance + scores.security) / 2),
-      checks: [
-        { status: 'pass', label: 'Gzip / Brotli Compression' },
-        { status: 'pass', label: 'HTTP/2 or HTTP/3 Protocol' },
-        { status: 'pass', label: 'CDN Edge Caching' },
-        { status: 'pass', label: 'DNS Lookup & Connection Time' },
-        { status: 'pass', label: 'Static Asset Cache Headers' },
-      ],
-    },
-    {
-      id: 'aiPrompt',
-      title: 'AI Prompt & Remediation Readiness',
-      scoreVal: scores.aiPrompt || 90,
-      checks: [
-        { status: 'pass', label: 'Automated Fix Prompts Generated' },
-        { status: 'pass', label: 'Code Remediations Available' },
-        { status: 'pass', label: 'Severity-Ranked Action Plan' },
-        { status: 'pass', label: 'One-Click Prompt Copying' },
-        { status: 'pass', label: 'GitHub Repository Extraction Ready' },
-      ],
+      checks: buildRealChecks('best-practices', scores.bestPractices || 85),
+      comingSoon: false,
     },
   ];
 
-  return moduleConfigs.map(cfg => {
+  // ===== 7 COMING SOON MODULES (no scanner available yet) =====
+  const comingSoonModules = [
+    { id: 'codeQuality', title: 'Code Quality & Bundle Architecture' },
+    { id: 'mobileUx', title: 'Mobile & Responsive UX' },
+    { id: 'privacyData', title: 'Privacy & Data Security' },
+    { id: 'pwaOffline', title: 'PWA & Offline Readiness' },
+    { id: 'uiRender', title: 'UI/UX & Render Stability' },
+    { id: 'infrastructure', title: 'Server & Network Infrastructure' },
+    { id: 'aiPrompt', title: 'AI Prompt & Remediation Readiness' },
+  ].map(cfg => ({
+    id: cfg.id,
+    title: cfg.title,
+    score: null,
+    description: 'Scanner not available yet. This module will be added in a future update.',
+    checks: [],
+    comingSoon: true,
+  }));
+
+  // Build final real module objects
+  const builtRealModules = realModules.map(cfg => {
     const scoreNum = Math.min(10, Math.max(1, (cfg.scoreVal / 10))).toFixed(1);
     const passCount = cfg.checks.filter(c => c.status === 'pass').length;
     const failCount = cfg.checks.filter(c => c.status === 'fail').length;
@@ -479,8 +443,11 @@ function buildModules(scores, audits = {}, _categories = {}) {
       score: scoreNum,
       description,
       checks: cfg.checks,
+      comingSoon: false,
     };
   });
+
+  return [...builtRealModules, ...comingSoonModules];
 }
 
 /**

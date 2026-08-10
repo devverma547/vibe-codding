@@ -223,11 +223,12 @@ export default function ReportPage() {
   // Tech stack
   const techStack = ai?.techStack || reportData?.techStack || [];
   
-  // Stats
+  // Stats — only count checks from real (non-comingSoon) modules
+  const realModulesOnly = modules.filter(m => !m.comingSoon);
   const stats = ai?.stats || {
-    passedChecks: modules.reduce((sum, m) => sum + (m.checks || []).filter(c => c.status === 'pass').length, 0),
-    failedChecks: modules.reduce((sum, m) => sum + (m.checks || []).filter(c => c.status === 'fail').length, 0),
-    warningChecks: modules.reduce((sum, m) => sum + (m.checks || []).filter(c => c.status === 'warn').length, 0),
+    passedChecks: realModulesOnly.reduce((sum, m) => sum + (m.checks || []).filter(c => c.status === 'pass').length, 0),
+    failedChecks: realModulesOnly.reduce((sum, m) => sum + (m.checks || []).filter(c => c.status === 'fail').length, 0),
+    warningChecks: realModulesOnly.reduce((sum, m) => sum + (m.checks || []).filter(c => c.status === 'warn').length, 0),
     criticalIssues: reportData?.criticalCount || 0,
   };
 
@@ -554,7 +555,44 @@ export default function ReportPage() {
                 const numericScore = parseFloat(m.score) || 0;
                 const sourceInfo = getSourceLabel(m.source);
                 const SourceIcon = sourceInfo.icon;
+                const isComingSoon = m.comingSoon === true;
                 
+                // === COMING SOON MODULE CARD ===
+                if (isComingSoon) {
+                  return (
+                    <div 
+                      key={m.id || moduleIdx}
+                      className="p-6 rounded-2xl bg-slate-50/50 dark:bg-[#0D1527]/30 border border-dashed border-slate-300 dark:border-white/10 shadow-none transition-all space-y-4 opacity-60 relative"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/50 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-400 dark:text-gray-600">
+                            <IconComponent size={16} />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-400 dark:text-gray-500">{m.title || m.category}</h3>
+                            <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded text-[9px] font-semibold border bg-slate-200/50 dark:bg-white/5 text-slate-400 dark:text-gray-500 border-slate-300 dark:border-white/10">
+                              🔒 Coming Soon
+                            </div>
+                          </div>
+                        </div>
+
+                        <span className="text-lg font-extrabold font-mono text-slate-300 dark:text-gray-700">
+                          —<span className="text-xs text-slate-300 dark:text-gray-700 font-normal">/10</span>
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-400 dark:text-gray-600 leading-relaxed italic">
+                        Scanner not available yet. This module will be added in a future update.
+                      </p>
+
+                      {/* Empty progress bar */}
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden" />
+                    </div>
+                  );
+                }
+
+                // === REAL MODULE CARD ===
                 return (
                   <div 
                     key={m.id || moduleIdx}
