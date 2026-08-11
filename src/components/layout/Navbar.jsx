@@ -59,10 +59,10 @@ export default function Navbar() {
 
   return (
     <>
-      <nav aria-label="Main Navigation" className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      <nav aria-label="Main Navigation" className={`fixed top-0 left-0 right-0 z-40 h-16 transition-all duration-300 ${
         scrolled 
-          ? 'bg-slate-50/95 dark:bg-[#080C14]/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 shadow-lg shadow-black/10 dark:shadow-black/60 py-4' 
-          : 'bg-slate-50/80 dark:bg-[#080C14]/80 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5 py-5 sm:py-6'
+          ? 'bg-slate-50/95 dark:bg-[#080C14]/95 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 shadow-lg shadow-black/10 dark:shadow-black/60' 
+          : 'bg-slate-50/80 dark:bg-[#080C14]/80 backdrop-blur-md border-b border-slate-200/50 dark:border-white/5'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           

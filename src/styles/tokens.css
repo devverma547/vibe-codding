@@ -1,4 +1,31 @@
 /* src/styles/tokens.css */
+@import "tailwindcss";
+
+/* Tailwind v4 — Custom theme configuration (replaces the old CDN inline config) */
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-display: "Outfit", "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+  --color-card: rgb(var(--card));
+  --color-border: rgba(var(--border-rgb), 0.15);
+  --color-primary: rgb(var(--primary-rgb));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+  --color-secondary: rgb(var(--secondary));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-brand: #00F5A0;
+  --color-brand-hover: #00E093;
+  --color-brand-obsidian: #080C14;
+  --color-brand-card: #0D1527;
+}
+
+/* Enable dark mode via class */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Color Tokens - SiteProof Obsidian & Mint Theme */
   --color-bg: #080C14;

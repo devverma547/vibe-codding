@@ -201,7 +201,7 @@ export default function LandingPage() {
       <main className="flex-1">
         
         {/* HERO SECTION */}
-        <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden">
+        <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden min-h-[80vh]">
           
           {/* Floating Particle Background */}
           <ParticleBackground />
@@ -213,8 +213,8 @@ export default function LandingPage() {
             
             {/* Top Pill Badge */}
             <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00F5A0]/10 border border-[#00F5A0]/30 text-xs font-semibold text-[#00F5A0] shadow-[0_0_20px_rgba(0,245,160,0.2)]"
             >
               <Zap size={14} className="text-[#00F5A0]" />
@@ -223,8 +223,8 @@ export default function LandingPage() {
 
             {/* Main Headline */}
             <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
               className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white max-w-4xl mx-auto leading-[1.1]"
             >
@@ -234,8 +234,8 @@ export default function LandingPage() {
 
             {/* Subhead Paragraph */}
             <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
               className="text-base sm:text-lg text-slate-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed"
             >
@@ -244,8 +244,8 @@ export default function LandingPage() {
 
             {/* URL & GitHub Repo Input Form */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
               className="space-y-4"
             >
@@ -312,8 +312,8 @@ export default function LandingPage() {
 
             {/* Score Gauge + Animated Stat Counter Cards Row */}
             <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
               className="flex flex-col md:flex-row items-center justify-center gap-8 pt-6"
             >
@@ -330,10 +330,10 @@ export default function LandingPage() {
                 ].map((stat, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 + i * 0.1 }}
-                    whileHover={{ scale: 1.03, y: -4, borderColor: 'rgba(0,245,160,0.4)', boxShadow: '0 10px 25px -5px rgba(0,245,160,0.2)' }}
+                    whileHover={{ scale: 1.03, borderColor: 'rgba(0,245,160,0.4)', boxShadow: '0 10px 25px -5px rgba(0,245,160,0.2)' }}
                     className="p-4 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 text-center transition-all shadow-sm dark:shadow-none"
                   >
                     <div className="text-xl sm:text-2xl font-extrabold text-[#00F5A0] font-display">{stat.component}</div>
@@ -345,8 +345,8 @@ export default function LandingPage() {
 
             {/* MVP Beta Row */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
             >
