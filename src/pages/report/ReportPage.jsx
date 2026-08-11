@@ -206,15 +206,25 @@ export default function ReportPage() {
   // === EXTRACT DATA FROM REPORT ===
   const ai = reportData?.aiReport || null;
   
-  // Modules/audit breakdown: ensure all 12 modules from reportData.modules are rendered
+  // IDs of modules that don't have real scanners yet (enforced client-side)
+  const COMING_SOON_MODULE_IDS = new Set([
+    'codeQuality', 'mobileUx', 'privacyData', 'pwaOffline', 'uiRender', 'infrastructure', 'aiPrompt'
+  ]);
+
+  // Modules/audit breakdown: merge base modules with AI data, then enforce comingSoon
   const baseModules = reportData?.modules || [];
   const aiBreakdownMap = new Map((ai?.auditBreakdown || []).map(m => [m.id, m]));
   const modules = baseModules.map(m => {
     const aiMod = aiBreakdownMap.get(m.id);
-    return aiMod ? { ...m, ...aiMod } : m;
+    const merged = aiMod ? { ...m, ...aiMod } : m;
+    // Enforce comingSoon on future modules (even if old data doesn't have the flag)
+    if (COMING_SOON_MODULE_IDS.has(m.id)) {
+      return { ...merged, comingSoon: true, score: null, checks: [], description: 'Scanner not available yet. This module will be added in a future update.' };
+    }
+    return { ...merged, comingSoon: false };
   });
   if (modules.length === 0 && ai?.auditBreakdown) {
-    modules.push(...ai.auditBreakdown);
+    modules.push(...ai.auditBreakdown.map(m => ({ ...m, comingSoon: COMING_SOON_MODULE_IDS.has(m.id) })));
   }
   
   // Fix prompts: prefer AI data, fallback to PageSpeed recommendations
