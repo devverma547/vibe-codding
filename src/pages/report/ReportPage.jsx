@@ -208,7 +208,7 @@ export default function ReportPage() {
   
   // IDs of modules that don't have real scanners yet (enforced client-side)
   const COMING_SOON_MODULE_IDS = new Set([
-    'codeQuality', 'mobileUx', 'privacyData', 'pwaOffline', 'uiRender', 'infrastructure', 'aiPrompt'
+    'mobileUx', 'privacyData', 'pwaOffline', 'uiRender', 'infrastructure', 'aiPrompt'
   ]);
 
   // Modules/audit breakdown: merge base modules with AI data, then enforce comingSoon
@@ -221,7 +221,11 @@ export default function ReportPage() {
     if (COMING_SOON_MODULE_IDS.has(m.id)) {
       return { ...merged, comingSoon: true, score: null, checks: [], description: 'Scanner not available yet. This module will be added in a future update.' };
     }
-    return { ...merged, comingSoon: false };
+    // Code Quality module: needs GitHub repo to work
+    if (m.id === 'codeQuality' && !githubRepoUrl) {
+      return { ...merged, needsGithub: true, score: null, checks: [], description: 'Provide your GitHub repository link when scanning to unlock this module.' };
+    }
+    return { ...merged, comingSoon: false, needsGithub: false };
   });
   if (modules.length === 0 && ai?.auditBreakdown) {
     modules.push(...ai.auditBreakdown.map(m => ({ ...m, comingSoon: COMING_SOON_MODULE_IDS.has(m.id) })));
@@ -567,33 +571,41 @@ export default function ReportPage() {
                 const SourceIcon = sourceInfo.icon;
                 const isComingSoon = m.comingSoon === true;
                 
-                // === COMING SOON MODULE CARD ===
-                if (isComingSoon) {
+                // === COMING SOON or NEEDS GITHUB MODULE CARD ===
+                const isNeedsGithub = m.needsGithub === true;
+                if (isComingSoon || isNeedsGithub) {
                   return (
                     <div 
                       key={m.id || moduleIdx}
-                      className="p-6 rounded-2xl bg-slate-50/50 dark:bg-[#0D1527]/30 border border-dashed border-slate-300 dark:border-white/10 shadow-none transition-all space-y-4 opacity-60 relative"
+                      className="p-6 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none transition-all space-y-4 relative"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/50 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-400 dark:text-gray-600">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-gray-400">
                             <IconComponent size={16} />
                           </div>
                           <div>
-                            <h3 className="text-base font-bold text-slate-400 dark:text-gray-500">{m.title || m.category}</h3>
-                            <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded text-[9px] font-semibold border bg-slate-200/50 dark:bg-white/5 text-slate-400 dark:text-gray-500 border-slate-300 dark:border-white/10">
-                              🔒 Coming Soon
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white">{m.title || m.category}</h3>
+                            <div className={`inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded text-[9px] font-semibold border ${
+                              isNeedsGithub
+                                ? 'bg-purple-500/10 text-purple-500 border-purple-500/20'
+                                : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 border-slate-200 dark:border-white/10'
+                            }`}>
+                              {isNeedsGithub ? '🔗 GitHub Repo Required' : '🔒 Coming Soon'}
                             </div>
                           </div>
                         </div>
 
-                        <span className="text-lg font-extrabold font-mono text-slate-300 dark:text-gray-700">
-                          —<span className="text-xs text-slate-300 dark:text-gray-700 font-normal">/10</span>
+                        <span className="text-lg font-extrabold font-mono text-slate-400 dark:text-gray-500">
+                          —<span className="text-xs text-slate-400 dark:text-gray-500 font-normal">/10</span>
                         </span>
                       </div>
 
-                      <p className="text-xs text-slate-400 dark:text-gray-600 leading-relaxed italic">
-                        Scanner not available yet. This module will be added in a future update.
+                      <p className="text-xs text-slate-600 dark:text-gray-400 leading-relaxed">
+                        {isNeedsGithub
+                          ? 'Provide your GitHub repository link when scanning to unlock this module. Code Quality analysis requires access to your source code.'
+                          : 'Scanner not available yet. This module will be added in a future update.'
+                        }
                       </p>
 
                       {/* Empty progress bar */}
