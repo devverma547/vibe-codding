@@ -23,6 +23,12 @@ body {
   overflow-x: hidden;
 }
 
+/* Layout containment for CLS prevention */
+img, video, iframe, canvas, svg {
+  max-width: 100%;
+}
+
+
 a {
   color: inherit;
   text-decoration: none;

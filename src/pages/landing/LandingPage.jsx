@@ -543,6 +543,12 @@ export default function LandingPage() {
         {/* SECTION: 3-STEP PROCESS */}
         <section className="py-20 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#080C14] relative">
           <div className="max-w-6xl mx-auto px-4">
+            <div className="text-center space-y-3 mb-12">
+              <span className="text-xs font-mono text-[#00F5A0] uppercase tracking-widest font-semibold">Simple Workflow</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
+                How SiteProof Works in 3 Steps
+              </h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
               
               {/* Animated connecting line (desktop only) */}
@@ -573,7 +579,7 @@ export default function LandingPage() {
                   <SpotlightCard className="h-full space-y-3">
                     <span className="text-sm font-mono font-bold text-[#00F5A0] px-2.5 py-1 rounded-md bg-[#00F5A0]/10 border border-[#00F5A0]/20">Step {item.step}</span>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mt-2 font-display">{item.title}</h3>
-                    <p className="text-sm text-slate-600 dark:text-gray-400 leading-relaxed">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                       {item.desc}
                     </p>
                   </SpotlightCard>

@@ -10,11 +10,20 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           const normalized = id.replace(/\\/g, '/');
+          if (normalized.includes('/node_modules/framer-motion/')) {
+            return 'vendor-framer';
+          }
+          if (normalized.includes('/node_modules/lucide-react/')) {
+            return 'vendor-lucide';
+          }
+          if (normalized.includes('/node_modules/@supabase/')) {
+            return 'vendor-supabase';
+          }
           if (normalized.includes('/node_modules/firebase/')) {
             return 'vendor-firebase';
           }
-          if (normalized.includes('/node_modules/framer-motion/')) {
-            return 'vendor-framer';
+          if (normalized.includes('/node_modules/recharts/')) {
+            return 'vendor-recharts';
           }
         },
       },
