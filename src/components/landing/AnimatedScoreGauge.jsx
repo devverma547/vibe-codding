@@ -42,7 +42,7 @@ export default function AnimatedScoreGauge({ targetScore = 87, duration = 2.5 })
 
   return (
     <motion.div
-      className="relative inline-flex items-center justify-center"
+      className="relative inline-flex items-center justify-center p-2"
       initial={{ opacity: 0, scale: 0.8 }}
       whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true }}
@@ -51,11 +51,11 @@ export default function AnimatedScoreGauge({ targetScore = 87, duration = 2.5 })
     >
       {/* Outer glow */}
       <div 
-        className="absolute rounded-full blur-xl"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-xl pointer-events-none"
         style={{
-          width: size + 30,
-          height: size + 30,
-          background: `radial-gradient(circle, ${scoreColor}15 0%, transparent 70%)`,
+          width: size + 20,
+          height: size + 20,
+          background: `radial-gradient(circle, ${scoreColor}25 0%, transparent 70%)`,
         }}
       />
       

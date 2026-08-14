@@ -201,7 +201,7 @@ export default function LandingPage() {
       <main className="flex-1">
         
         {/* HERO SECTION */}
-        <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden min-h-[80vh]">
+        <section className="relative pt-24 pb-16 sm:pt-28 md:pt-32 md:pb-24 overflow-hidden min-h-[85vh]">
           
           {/* Floating Particle Background */}
           <ParticleBackground />
@@ -215,7 +215,7 @@ export default function LandingPage() {
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00F5A0]/10 border border-[#00F5A0]/30 text-xs font-semibold text-[#00F5A0] shadow-[0_0_20px_rgba(0,245,160,0.2)]"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00F5A0]/10 border border-[#00F5A0]/30 text-xs font-semibold text-[#00F5A0] dark:text-[#00F5A0] text-emerald-600 shadow-[0_0_20px_rgba(0,245,160,0.2)]"
             >
               <Zap size={14} className="text-[#00F5A0]" />
               <span>⚡ Built for Cursor, Bolt, Lovable, v0 & ChatGPT</span>
@@ -251,28 +251,28 @@ export default function LandingPage() {
             >
               <form 
                 onSubmit={handleStartScan}
-                className="max-w-xl mx-auto flex flex-col gap-3 p-3 rounded-2xl bg-white/70 dark:bg-[#0F1726]/70 border border-slate-300 dark:border-white/10 shadow-[0_0_40px_rgba(0,245,160,0.15)] ring-1 ring-white/20 dark:ring-[#00F5A0]/20 focus-within:ring-[#00F5A0]/50 focus-within:border-[#00F5A0]/50 transition-all backdrop-blur-2xl"
+                className="max-w-xl mx-auto flex flex-col gap-3.5 p-4 rounded-2xl bg-white dark:bg-[#0F1726]/90 border border-slate-300 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-[0_0_40px_rgba(0,245,160,0.15)] ring-1 ring-slate-200 dark:ring-[#00F5A0]/20 focus-within:ring-2 focus-within:ring-[#00F5A0] focus-within:border-[#00F5A0] transition-all backdrop-blur-2xl"
               >
-                <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#080C14]/50 border border-slate-200 dark:border-white/5">
-                  <span className="text-slate-400 dark:text-gray-500 font-mono text-sm font-semibold">https://</span>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-100 dark:bg-[#080C14]/70 border border-slate-300/80 dark:border-white/10 focus-within:border-[#00F5A0] focus-within:bg-white dark:focus-within:bg-[#080C14] transition-all min-h-[48px]">
+                  <span className="text-slate-600 dark:text-gray-400 font-mono text-sm font-semibold shrink-0">https://</span>
                   <input
                     id="scan-input"
                     type="text"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
                     placeholder="your-website.com"
-                    className="w-full bg-transparent text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none font-mono"
+                    className="w-full bg-transparent text-sm sm:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none font-mono font-medium"
                   />
                 </div>
 
-                <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#080C14]/50 border border-slate-200 dark:border-white/5">
-                  <GitBranch size={16} className="text-[#00F5A0] shrink-0" />
+                <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14]/70 border border-slate-300/80 dark:border-white/10 focus-within:border-[#00F5A0] focus-within:bg-white dark:focus-within:bg-[#080C14] transition-all min-h-[44px]">
+                  <GitBranch size={18} className="text-[#00F5A0] dark:text-[#00F5A0] shrink-0" />
                   <input
                     type="text"
                     value={githubRepoInput}
                     onChange={(e) => setGithubRepoInput(e.target.value)}
                     placeholder="https://github.com/user/repository (optional)"
-                    className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-600 focus:outline-none font-mono"
+                    className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none font-mono font-medium"
                   />
                 </div>
 
@@ -280,15 +280,15 @@ export default function LandingPage() {
                   type="submit"
                   whileHover={{ scale: 1.02, boxShadow: '0 0 35px rgba(0,245,160,0.5)' }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-3 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,245,160,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm sm:text-base transition-all shadow-[0_0_25px_rgba(0,245,160,0.35)] flex items-center justify-center gap-2 cursor-pointer mt-1"
                 >
-                  Scan Website & GitHub Repo <ArrowRight size={16} />
+                  Scan Website & GitHub Repo <ArrowRight size={18} />
                 </motion.button>
               </form>
 
               {/* Sample Sites Chips */}
-              <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-600 dark:text-gray-400">
-                <span className="font-medium text-slate-500 dark:text-gray-500">Or try sample URL + Repo:</span>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs text-slate-600 dark:text-gray-400">
+                <span className="font-medium text-slate-500 dark:text-gray-400">Or try sample URL + Repo:</span>
                 {sampleSites.map((site, index) => (
                   <motion.button
                     key={index}
@@ -299,7 +299,7 @@ export default function LandingPage() {
                       setGithubRepoInput(site.repo);
                       handleStartScan(e, site.url, site.repo);
                     }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-white/5 border border-slate-300 dark:border-white/10 hover:text-[#00F5A0] font-mono text-[11px] transition-all flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-700 dark:text-gray-300 hover:text-slate-950 dark:hover:text-[#00F5A0] hover:border-[#00F5A0]/50 font-mono text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <span>{site.label}</span>
                     <ExternalLink size={10} />
@@ -308,14 +308,12 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-
-
             {/* Score Gauge + Animated Stat Counter Cards Row */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-col md:flex-row items-center justify-center gap-8 pt-6"
+              className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 pt-10 mt-6 border-t border-slate-200/60 dark:border-white/5"
             >
               {/* Animated Score Gauge */}
               <AnimatedScoreGauge targetScore={87} duration={2.5} />
