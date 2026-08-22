@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, CheckCircle2 } from 'lucide-react';
+import { Shield, CheckCircle2, User, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
 
 export default function SignupPage() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccessMessage] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isSuccessMessage, setIsSuccessMessage] = useState(false);
   
-  const { googleSignIn, isAuthenticated } = useAuth();
+  const { signup, googleSignIn, isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -22,8 +30,65 @@ export default function SignupPage() {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleGoogleSignIn = async () => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) {
+      newErrors.name = 'Full name is required';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email address is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEmailSignup = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+
     setIsLoading(true);
+    try {
+      const res = await signup({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password
+      });
+
+      if (res?.success) {
+        if (res.requiresConfirmation) {
+          setIsSuccessMessage(true);
+          addToast('Account created! Please check your email to verify.', 'success');
+        } else {
+          addToast('Welcome to SiteProof!', 'success');
+          navigate('/dashboard', { replace: true });
+        }
+      } else {
+        addToast(res?.error || 'Failed to create account', 'error');
+      }
+    } catch (error) {
+      addToast(error.message || 'An unexpected error occurred', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
     try {
       const res = await googleSignIn();
       if (res?.success) {
@@ -34,7 +99,7 @@ export default function SignupPage() {
     } catch (error) {
       addToast(error.message || 'Failed to sign in with Google', 'error');
     } finally {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
     }
   };
 
@@ -67,7 +132,7 @@ export default function SignupPage() {
               <CheckCircle2 className="w-16 h-16 text-[#00F5A0] mx-auto mb-4 animate-bounce" />
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Check your email</h2>
               <p className="text-slate-500 dark:text-gray-400 mb-6">
-                We've sent a verification link to <span className="font-semibold text-slate-900 dark:text-white">your email</span>. Please verify your email to get started.
+                We've sent a verification link to <span className="font-semibold text-slate-900 dark:text-white">{formData.email}</span>. Please verify your email to get started.
               </p>
               <Link to="/login">
                 <Button className="w-full bg-[#00F5A0] text-slate-950 font-semibold hover:bg-[#00E093]">
@@ -77,18 +142,17 @@ export default function SignupPage() {
             </div>
           ) : (
             <>
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Create your account</h1>
-                <p className="text-slate-500 dark:text-gray-400 mt-2">Start auditing your websites for free today</p>
+                <p className="text-slate-500 dark:text-gray-400 mt-1 text-sm">Start auditing your websites for free today</p>
               </div>
 
-              <div className="mb-6"></div>
-
+              {/* Google Sign In */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                disabled={isLoading}
-                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-900 dark:text-white font-semibold rounded-xl border border-slate-200 dark:border-white/10 transition-all duration-200 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                disabled={isGoogleLoading || isLoading}
+                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-900 dark:text-white font-semibold rounded-xl border border-slate-200 dark:border-white/10 transition-all duration-200 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0" aria-hidden="true">
                   <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36 16.6053 6.549L20.0303 3.125C17.9503 1.19 15.2353 0 12.0003 0C7.31028 0 3.25528 2.69 1.28027 6.609L5.27027 9.704C6.21527 6.86 8.87028 4.75 12.0003 4.75Z" fill="#EA4335"/>
@@ -96,10 +160,65 @@ export default function SignupPage() {
                   <path d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.60986C0.46 8.22986 0 10.0599 0 11.9999C0 13.9399 0.46 15.7699 1.28 17.3899L5.26498 14.2949Z" fill="#FBBC05"/>
                   <path d="M12.0004 24.0001C15.2404 24.0001 17.9654 22.935 19.9454 21.095L16.0804 18.095C15.0054 18.82 13.6204 19.245 12.0004 19.245C8.87037 19.245 6.21537 17.135 5.26538 14.29L1.27539 17.385C3.25539 21.31 7.31037 24.0001 12.0004 24.0001Z" fill="#34A853"/>
                 </svg>
-                <span>Google</span>
+                <span>{isGoogleLoading ? 'Connecting...' : 'Sign up with Google'}</span>
               </button>
 
-              <p className="mt-8 text-center text-sm text-slate-500 dark:text-gray-400">
+              <div className="auth-divider">
+                <span>or continue with email</span>
+              </div>
+
+              {/* Email / Password Form */}
+              <form onSubmit={handleEmailSignup} className="space-y-4">
+                <Input
+                  id="signup-name"
+                  name="name"
+                  label="Full Name"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={handleChange}
+                  error={errors.name}
+                  icon={User}
+                  required
+                />
+
+                <Input
+                  id="signup-email"
+                  name="email"
+                  type="email"
+                  label="Email Address"
+                  placeholder="name@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  error={errors.email}
+                  icon={Mail}
+                  required
+                />
+
+                <Input
+                  id="signup-password"
+                  name="password"
+                  type="password"
+                  label="Password"
+                  placeholder="••••••••"
+                  helperText="Minimum 6 characters"
+                  value={formData.password}
+                  onChange={handleChange}
+                  error={errors.password}
+                  icon={Lock}
+                  required
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full bg-[#00F5A0] text-slate-950 font-bold hover:bg-[#00E093] shadow-[0_0_20px_rgba(0,245,160,0.2)] hover:shadow-[0_0_30px_rgba(0,245,160,0.4)] transition-all cursor-pointer"
+                  loading={isLoading}
+                  disabled={isLoading || isGoogleLoading}
+                >
+                  Create Account
+                </Button>
+              </form>
+
+              <p className="mt-6 text-center text-sm text-slate-500 dark:text-gray-400">
                 Already have an account?{' '}
                 <Link to="/login" className="text-[#00F5A0] hover:underline font-medium">
                   Log in
