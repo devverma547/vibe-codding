@@ -40,7 +40,6 @@ export default function Footer() {
             <h2 className="text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white">Product</h2>
             <ul className="space-y-2.5">
               <li><Link to="/" className="text-slate-600 dark:text-slate-300 hover:text-[#00F5A0] transition-colors text-xs py-1 inline-block">Features</Link></li>
-              <li><Link to="/pricing" className="text-slate-600 dark:text-slate-300 hover:text-[#00F5A0] transition-colors text-xs py-1 inline-block">Pricing</Link></li>
               <li><Link to="/dashboard" className="text-slate-600 dark:text-slate-300 hover:text-[#00F5A0] transition-colors text-xs py-1 inline-block">Dashboard</Link></li>
               <li><Link to="/sample-report" className="text-slate-600 dark:text-slate-300 hover:text-[#00F5A0] transition-colors text-xs py-1 inline-block">Live Demo</Link></li>
               <li><a href="#" className="text-slate-600 dark:text-slate-300 hover:text-[#00F5A0] transition-colors text-xs py-1 inline-block">API Docs</a></li>

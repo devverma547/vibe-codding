@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ShieldCheck, Menu, X, Home, CreditCard, LayoutDashboard, 
+  ShieldCheck, Menu, X, Home, LayoutDashboard, 
   FileText, Info, Mail, ArrowRight, Zap, LogOut, History 
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -41,7 +41,6 @@ export default function Navbar() {
   // Public links (always shown)
   const publicNavLinks = [
     { label: 'Home', href: '/', icon: <Home size={18} /> },
-    { label: 'Pricing', href: '/pricing', icon: <CreditCard size={18} /> },
     { label: 'Live Demo', href: '/sample-report', icon: <FileText size={18} /> },
     { label: 'About us', href: '/about', icon: <Info size={18} /> },
     { label: 'Contact us', href: '/contact', icon: <Mail size={18} /> },
@@ -54,7 +53,7 @@ export default function Navbar() {
   ];
 
   const allNavLinks = isAuthenticated 
-    ? [...publicNavLinks.slice(0, 2), ...authNavLinks, ...publicNavLinks.slice(2)]
+    ? [publicNavLinks[0], ...authNavLinks, ...publicNavLinks.slice(1)]
     : publicNavLinks;
 
   return (

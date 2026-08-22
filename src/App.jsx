@@ -44,7 +44,6 @@ const AuthCallback = lazyWithRetry(() => import('./pages/auth/AuthCallback'));
 const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
 const HistoryPage = lazyWithRetry(() => import('./pages/history/HistoryPage'));
 const AboutPage = lazyWithRetry(() => import('./pages/about/AboutPage'));
-const PricingPage = lazyWithRetry(() => import('./pages/pricing/PricingPage'));
 const ContactPage = lazyWithRetry(() => import('./pages/contact/ContactPage'));
 const ReportPage = lazyWithRetry(() => import('./pages/report/ReportPage'));
 const SampleReportPage = lazyWithRetry(() => import('./pages/report/SampleReportPage'));
@@ -68,7 +67,6 @@ function App() {
                       {/* Public Routes */}
                       <Route path="/" element={<LandingPage />} />
                       <Route path="/about" element={<AboutPage />} />
-                      <Route path="/pricing" element={<PricingPage />} />
                       <Route path="/contact" element={<ContactPage />} />
                       <Route path="/sample-report" element={<SampleReportPage />} />
 
