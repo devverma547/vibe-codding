@@ -78,7 +78,7 @@ const HistoryPage = () => {
   };
 
   return (
-    <div className="container p-6 flex flex-col gap-6 max-w-6xl mx-auto">
+    <div className="w-full flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6 flex flex-col">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Scan History</h1>

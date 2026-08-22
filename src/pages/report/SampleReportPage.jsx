@@ -109,13 +109,11 @@ export default function SampleReportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans flex flex-col relative">
+    <div className="w-full flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 relative">
       <Helmet>
         <title>Sample Report — SiteProof AI Web Quality Audit</title>
         <meta name="description" content="See a sample SiteProof audit report showcasing how our platform analyzes sites and provides AI recommendations." />
       </Helmet>
-
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 space-y-10">
 
         {/* DEMO BANNER */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 px-5 py-3 rounded-2xl bg-[#00F5A0]/5 dark:bg-[#00F5A0]/10 border border-[#00F5A0]/20">
@@ -452,8 +450,6 @@ export default function SampleReportPage() {
             Scan Your Site Now <ArrowRight size={18} />
           </Link>
         </div>
-
-      </main>
 
       {/* FIX DETAIL MODAL */}
       <AnimatePresence>

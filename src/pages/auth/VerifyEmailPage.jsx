@@ -100,7 +100,7 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 relative overflow-hidden auth-page">
+    <div className="w-full flex-1 flex items-center justify-center bg-background px-4 py-12 relative overflow-hidden auth-page">
       {/* Background decoration */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-blue-500/10 blur-[100px]" />

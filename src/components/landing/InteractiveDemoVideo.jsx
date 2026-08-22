@@ -24,27 +24,27 @@ export default function InteractiveDemoVideo() {
           </div>
 
           {/* Interactive Feature Tabs */}
-          <div className="flex items-center bg-white/5 p-1 rounded-lg border border-white/10">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10 w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('scan')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                activeTab === 'scan' ? 'bg-[#00F5A0] text-slate-950 font-bold' : 'text-gray-400 hover:text-white'
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer ${
+                activeTab === 'scan' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-400 hover:text-white'
               }`}
             >
               <Eye size={13} className="inline mr-1.5" /> Live Scan Demo
             </button>
             <button
               onClick={() => setActiveTab('fixes')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                activeTab === 'fixes' ? 'bg-[#00F5A0] text-slate-950 font-bold' : 'text-gray-400 hover:text-white'
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer ${
+                activeTab === 'fixes' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-400 hover:text-white'
               }`}
             >
               <Code size={13} className="inline mr-1.5" /> AI Fix Generator
             </button>
             <button
               onClick={() => setActiveTab('comparison')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                activeTab === 'comparison' ? 'bg-[#00F5A0] text-slate-950 font-bold' : 'text-gray-400 hover:text-white'
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer ${
+                activeTab === 'comparison' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-400 hover:text-white'
               }`}
             >
               <Sparkles size={13} className="inline mr-1.5" /> Before / After

@@ -41,10 +41,8 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans flex flex-col">
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-24 space-y-10">
-        
-        {/* Banner / Header */}
+    <div className="w-full flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10">
+      {/* Banner / Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#00F5A0] text-xs font-semibold">
             <Bug size={14} /> Help Us Improve • Bug Reports & Feedback Welcome
@@ -202,8 +200,6 @@ export default function ContactPage() {
           </div>
 
         </div>
-
-      </main>
     </div>
   );
 }

@@ -191,17 +191,17 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 font-sans flex flex-col selection:bg-[#00F5A0] selection:text-slate-950 transition-colors duration-300">
+    <div className="w-full flex-1 flex flex-col">
       <Helmet>
         <title>SiteProof | AI Audit & Fix Prompts</title>
         <meta name="description" content="Generate full 12-module audit reports and auto-generated AI prompts to fix your site instantly." />
         <meta property="og:title" content="SiteProof | AI Audit & Fix Prompts" />
         <meta property="og:description" content="Generate full 12-module audit reports and auto-generated AI prompts to fix your site instantly." />
       </Helmet>
-      <main className="flex-1">
+      <div className="flex-1 w-full">
         
         {/* HERO SECTION */}
-        <section className="relative pt-24 pb-16 sm:pt-28 md:pt-32 md:pb-24 overflow-hidden min-h-[85vh]">
+        <section className="relative pt-8 pb-16 sm:pt-12 md:pt-16 md:pb-24 overflow-hidden">
           
           {/* Floating Particle Background */}
           <ParticleBackground />
@@ -678,8 +678,7 @@ export default function LandingPage() {
             </div>
           </motion.div>
         </section>
-
-      </main>
+      </div>
       
       {/* Live Scanner Modal */}
       <ScanModal

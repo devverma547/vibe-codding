@@ -81,7 +81,7 @@ export default function OnboardingModal({ isOpen, onClose, onSuccess }) {
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="relative w-full max-w-md bg-[#080C14] border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-10"
+          className="relative w-full max-w-md bg-[#080C14] border border-white/10 rounded-3xl overflow-y-auto max-h-[90vh] shadow-2xl z-10"
         >
           {/* Header Glow */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-[#00F5A0] to-emerald-500" />

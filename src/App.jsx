@@ -62,7 +62,7 @@ function App() {
             <ToastProvider>
               <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 font-sans flex flex-col selection:bg-[#00F5A0] selection:text-slate-950 transition-colors duration-300">
                 <Navbar />
-                <main className="flex-1 pt-24">
+                <main className="flex-1 pt-16 flex flex-col">
                   <Suspense fallback={<LoadingScreen message="Loading page..." />}>
                     <Routes>
                       {/* Public Routes */}

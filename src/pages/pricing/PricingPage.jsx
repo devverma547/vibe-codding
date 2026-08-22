@@ -46,11 +46,9 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 font-sans flex flex-col">
-      <main className="flex-1 pt-28 pb-24">
-        
-        {/* HERO */}
-        <section className="max-w-4xl mx-auto px-4 text-center space-y-6">
+    <div className="w-full flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-12">
+      {/* HERO */}
+        <section className="max-w-4xl mx-auto text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#00F5A0]/10 border border-[#00F5A0]/30 text-xs font-semibold text-[#00F5A0]">
             <Zap size={14} /> Simple & Transparent Pricing
           </div>
@@ -64,7 +62,7 @@ export default function PricingPage() {
         </section>
 
         {/* PRICING CARDS GRID */}
-        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <section className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
             {plans.map((plan, idx) => (
               <div
@@ -110,7 +108,7 @@ export default function PricingPage() {
 
                   <button
                     onClick={() => navigate('/signup')}
-                    className={`w-full py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${
+                    className={`w-full py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
                       plan.popular
                         ? 'bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 shadow-[0_0_20px_rgba(0,245,160,0.3)]'
                         : 'bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-900 dark:text-white border border-slate-200 dark:border-white/10'
@@ -133,9 +131,6 @@ export default function PricingPage() {
             ))}
           </div>
         </section>
-
-      </main>
     </div>
   );
 }
-

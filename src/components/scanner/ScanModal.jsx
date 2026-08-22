@@ -121,12 +121,12 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
   const hasError = !!scanError;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-2xl bg-[#0B101D] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,245,160,0.15)] overflow-hidden"
+        className="w-full max-w-2xl bg-[#0B101D] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,245,160,0.15)] overflow-hidden max-h-[90vh] flex flex-col my-auto"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-[#080C14]">
@@ -160,7 +160,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
         </div>
 
         {/* Modal Content Body */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
           
           {/* Progress Bar & Radial Status */}
           <div className="space-y-2">

@@ -137,10 +137,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 transition-colors duration-300 flex flex-col font-sans">
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 space-y-8">
-        
-        {/* TOP DASHBOARD HEADER */}
+    <div className="w-full flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+      {/* TOP DASHBOARD HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Your sites</h1>
@@ -403,8 +401,6 @@ export default function DashboardPage() {
           </div>
 
         </div>
-
-      </main>
       
       {/* Add Site Modal */}
       {isAddSiteModalOpen && (

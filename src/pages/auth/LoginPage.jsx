@@ -39,7 +39,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#080C14] px-4 py-12 relative overflow-hidden auth-page">
+    <div className="w-full flex-1 flex items-center justify-center px-4 py-12 relative overflow-hidden auth-page">
       {/* Background decoration */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#00F5A0]/10 blur-[100px]" />
