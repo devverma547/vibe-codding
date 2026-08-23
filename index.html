@@ -25,18 +25,124 @@
     <meta name="twitter:description" content="SiteProof scans security, speed, SEO, accessibility, legal compliance and conversion — then hands you one score out of 100 and a prioritized fix list." />
     <meta name="twitter:image" content="https://vibe-codding-site.netlify.app/og-image.png" />
 
-    <!-- Google Fonts Optimization -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Performance & Font Optimization: DNS prefetch + preconnect -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    
+    <!-- Non-blocking font stylesheet with display=swap for instantaneous FCP -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     </noscript>
+
+    <!-- Critical CSS for Instant First Contentful Paint -->
+    <style>
+      :root {
+        --color-bg: #080C14;
+        --color-text: #F3F4F6;
+        --color-brand: #00F5A0;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #080C14;
+        color: #F3F4F6;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      .fcp-shell {
+        min-height: 100vh;
+        background-color: #080C14;
+        display: flex;
+        flex-direction: column;
+      }
+      .fcp-nav {
+        height: 64px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: calc(100% - 48px);
+      }
+      .fcp-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 18px;
+        color: #FFFFFF;
+      }
+      .fcp-logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(0, 245, 160, 0.15);
+        border: 1px solid rgba(0, 245, 160, 0.3);
+      }
+      .fcp-hero {
+        padding: 80px 24px;
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+      .fcp-badge {
+        height: 28px;
+        width: 180px;
+        border-radius: 9999px;
+        background: rgba(0, 245, 160, 0.1);
+        border: 1px solid rgba(0, 245, 160, 0.25);
+        animation: fcpPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .fcp-title {
+        height: 48px;
+        width: 85%;
+        max-width: 580px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        animation: fcpPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .fcp-subtitle {
+        height: 24px;
+        width: 65%;
+        max-width: 420px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        animation: fcpPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes fcpPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+    </style>
   </head>
   <body class="bg-[#080C14] text-gray-100 font-sans antialiased selection:bg-[#00F5A0] selection:text-slate-950">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Instant First Contentful Paint (FCP) Pre-render Shell -->
+      <div class="fcp-shell" aria-hidden="true">
+        <header class="fcp-nav">
+          <div class="fcp-brand">
+            <div class="fcp-logo"></div>
+            <span>SiteProof</span>
+          </div>
+        </header>
+        <main class="fcp-hero">
+          <div class="fcp-badge"></div>
+          <div class="fcp-title"></div>
+          <div class="fcp-subtitle"></div>
+        </main>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-
