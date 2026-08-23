@@ -171,7 +171,12 @@ Produce a JSON object with this exact structure.
 1. ALWAYS produce exactly 5 auditBreakdown entries, one for each category: ${CATEGORIES_5.join(', ')}.
 2. DO NOT invent or fabricate data. Every check label MUST reference a specific metric or audit result.
 3. SCORES MUST BE REAL: Your module scores (0.0 to 10.0) MUST be mathematically derived from PageSpeed scores provided (e.g. 85 = 8.5).
-4. FIX PROMPTS MUST BE AUTOMATED: Write \`fixPrompts\` -> \`prompt\` field as instructions for an AI Coding Assistant.
+4. FIX PROMPTS MUST BE ACTIONABLE & INCLUDE DEPLOYMENT: Every prompt in `fixPrompts` MUST instruct the AI coding assistant to:
+   - Identify root causes and apply replacement code directly to the repository.
+   - Run build/tests to verify correctness.
+   - Automatically build and deploy the changes (e.g., Netlify, Vercel, Git CI/CD) if it has deploy tools/permissions.
+   - If the AI cannot deploy automatically, it MUST explicitly instruct the user at the end of its response:
+     "⚠️ DEPLOYMENT REQUIRED: To see your improved score when rescanning in SiteProof, please deploy or publish these changes to your live website host (e.g., Netlify, Vercel, or custom host) before rescanning."
 
 {
   "healthScore": <exact average of PageSpeed category scores (0-100)>,
@@ -450,7 +455,18 @@ function clampScore(value) {
 }
 
 function buildAutomatedFixPrompt(domain, title = 'Fix Issue', detail = '') {
-  return `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${title}\nDetails: ${detail}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`;
+  return `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.
+
+Issue to Fix: ${title}
+Details: ${detail}
+
+Execution Instructions:
+1. Inspect the repository, identify the exact file paths and code causing this issue, and apply the required changes directly. Do not ask the user to manually edit code.
+2. Build and verify the project (e.g., npm run build, run test suites) to ensure clean execution with zero errors.
+3. Deployment & CI/CD:
+   - If you have access to deployment tools, CLI, or hosting integrations (e.g., Netlify, Vercel, Cloudflare Pages, Git auto-deploy), build and deploy the updated project to live production.
+   - If you cannot deploy automatically, you MUST explicitly instruct the user at the end of your response:
+     "⚠️ DEPLOYMENT REQUIRED: To see your improved score when rescanning in SiteProof, please deploy or publish these changes to your live website host (e.g., Netlify, Vercel, or custom host) before rescanning."`;
 }
 
 function extractJSON(text) {

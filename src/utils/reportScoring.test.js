@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
 import {
   calculateProjectedScore,
   extractImpactPoints,
   normalizeActionPlanImpacts,
+  formatAiFixPrompt,
 } from './reportScoring';
 
 describe('report scoring helpers', () => {
@@ -37,5 +37,13 @@ describe('report scoring helpers', () => {
   it('extracts points from estimated impact labels', () => {
     expect(extractImpactPoints('Est. +8 pts')).toBe(8);
     expect(extractImpactPoints('Ongoing')).toBe(0);
+  });
+
+  it('generates fix prompts containing deployment instructions and fallback warning', () => {
+    const prompt = formatAiFixPrompt('my-app.netlify.app', 'Fix Contrast', 'Low contrast on buttons');
+    expect(prompt).toContain('my-app.netlify.app');
+    expect(prompt).toContain('Fix Contrast');
+    expect(prompt).toContain('Deployment & CI/CD:');
+    expect(prompt).toContain('DEPLOYMENT REQUIRED');
   });
 });

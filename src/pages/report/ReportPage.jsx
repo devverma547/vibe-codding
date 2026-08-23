@@ -934,8 +934,8 @@ export default function ReportPage() {
                         {activeFixModal.prompt}
                       </pre>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-gray-500 italic pt-1">
-                      Paste this into Cursor, v0, Bolt.new, Lovable, or ChatGPT. If no GitHub repo was linked, the tool must inspect your local files first.
+                    <p className="text-[11px] text-slate-500 dark:text-gray-400 italic pt-1">
+                      Paste this into Antigravity, Cursor, v0, Bolt.new, Lovable, or ChatGPT. <strong>Important:</strong> After applying fixes, ensure changes are deployed to your live site before rescanning to see your updated score.
                     </p>
                   </div>
 

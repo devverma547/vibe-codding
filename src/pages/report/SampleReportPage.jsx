@@ -8,6 +8,7 @@ import {
   X, Code, Eye, Palette, Info, Database, ArrowRight
 } from 'lucide-react';
 import demoSnapshot from '../../data/demo-snapshot.json';
+import { formatAiFixPrompt } from '../../utils/reportScoring';
 
 // Map category IDs to icons
 const categoryIcons = {
@@ -500,17 +501,20 @@ export default function SampleReportPage() {
                 {/* Generated prompt */}
                 <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-white/5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 flex items-center gap-1.5"><Code size={14} aria-hidden="true" /> LLM Prompt</span>
-                    <button onClick={() => handleCopyPrompt(`You are an AI Coding Assistant. Implement the following fix for the website ${domainName} automatically.\n\nIssue to Fix: ${activeFixModal.title}\nDetails: ${activeFixModal.detail}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`)}
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 flex items-center gap-1.5"><Code size={14} aria-hidden="true" /> LLM Prompt — Paste into v0 / Bolt / Cursor</span>
+                    <button onClick={() => handleCopyPrompt(formatAiFixPrompt(domainName, activeFixModal.title, activeFixModal.detail, githubRepoUrl))}
                       aria-label="Copy AI fix prompt to clipboard"
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-600 dark:text-[#00F5A0] hover:bg-[#00F5A0]/10 transition-colors flex items-center gap-1.5 cursor-pointer border border-emerald-500/30 dark:border-[#00F5A0]/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0]">
                       {copiedPrompt ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
                       {copiedPrompt ? 'Copied!' : 'Copy Prompt 📋'}
                     </button>
                   </div>
-                  <pre className="p-4 rounded-xl bg-slate-100 dark:bg-[#05080E] border border-slate-200 dark:border-white/10 font-mono text-sm text-slate-800 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-                    {`You are an AI Coding Assistant. Implement the following fix for the website ${domainName} automatically.\n\nIssue to Fix: ${activeFixModal.title}\nDetails: ${activeFixModal.detail}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`}
+                  <pre className="p-4 rounded-xl bg-slate-100 dark:bg-[#05080E] border border-slate-200 dark:border-white/10 font-mono text-sm text-slate-800 dark:text-gray-300 whitespace-pre-wrap leading-relaxed max-h-64 overflow-y-auto">
+                    {formatAiFixPrompt(domainName, activeFixModal.title, activeFixModal.detail, githubRepoUrl)}
                   </pre>
+                  <p className="text-[11px] text-slate-500 dark:text-gray-400 italic pt-1">
+                    Paste this into Antigravity, Cursor, v0, Bolt.new, Lovable, or ChatGPT. <strong>Important:</strong> After applying fixes, ensure changes are deployed to your live site before rescanning to see your updated score.
+                  </p>
                 </div>
               </div>
 

@@ -360,11 +360,13 @@ Produce a JSON object containing the Code Quality module analysis and fix prompt
       "title": "<short action title>",
       "detail": "<why this matters, citing exact file paths>",
       "impact": "<e.g. 'Est. +5 pts'>",
-      "prompt": "<Direct instruction prompt for Cursor/Bolt/v0 referencing exact file paths>",
+      "prompt": "<Direct instruction prompt for Cursor/Bolt/v0 referencing exact file paths with mandatory build and deployment steps>",
       "code": "<example code snippet showing the fix>"
     }
   ]
 }
+
+⚠️ FIX PROMPT RULE: Every prompt in fixPrompts MUST instruct the AI assistant to fix the code, test/build, and automatically deploy the changes to production (e.g. Netlify/Vercel) if permissions allow, or remind the user to deploy/publish their changes before rescanning in SiteProof.
 
 Respond with ONLY valid JSON. No other text.`;
 
@@ -394,13 +396,14 @@ function normalizeCodeAIResponse(aiData, githubRepoUrl, url, model = '') {
     ],
   };
 
+  const domain = extractDomain(url);
   const fixPrompts = (aiData.fixPrompts || []).map((p) => ({
     priority: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(p.priority) ? p.priority : 'MEDIUM',
     time: p.time || '15 mins',
     title: p.title || 'Improve Code Architecture',
     detail: p.detail || 'Code review recommendation based on source code analysis.',
     impact: p.impact || '+5 pts',
-    prompt: p.prompt || `You are an AI Coding Assistant. Refactor ${githubRepoUrl} source code to resolve: ${p.title}`,
+    prompt: p.prompt || `You are an AI Coding Assistant. Implement the following fix for the website ${domain} (Repository: ${githubRepoUrl}) automatically.\n\nIssue to Fix: ${p.title}\nDetails: ${p.detail || 'Refactor codebase to improve code quality.'}\n\nExecution Instructions:\n1. Inspect the repository, identify the exact file paths and code causing this issue, and apply the required changes directly.\n2. Build and verify the project (e.g., npm run build, run tests) to ensure zero errors.\n3. Deployment & CI/CD:\n   - If you have access to deployment tools or hosting integrations (e.g. Netlify, Vercel, Git CI/CD), build and deploy the updated project to live production.\n   - If you cannot deploy automatically, remind the user: "⚠️ DEPLOYMENT REQUIRED: To see your improved score when rescanning in SiteProof, please deploy or publish these changes to your live website host before rescanning."`,
     code: p.code || '',
   }));
 

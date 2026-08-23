@@ -69,3 +69,29 @@ export function normalizeActionPlanImpacts(actionPlan = [], currentScore, projec
     };
   });
 }
+
+/**
+ * Build a structured, actionable AI Fix Prompt that includes mandatory deployment instructions
+ * @param {string} domain - Domain or URL
+ * @param {string} title - Action title
+ * @param {string} detail - Issue details/findings
+ * @param {string} [repoUrl] - Optional GitHub repo URL
+ * @returns {string} Fully structured AI prompt
+ */
+export function formatAiFixPrompt(domain, title = 'Fix Issue', detail = '', repoUrl = '') {
+  const cleanDomain = domain?.replace(/^https?:\/\//, '').replace(/\/.*$/, '') || 'your-site.com';
+  const targetInfo = repoUrl ? `the website ${cleanDomain} (Repository: ${repoUrl})` : `the website ${cleanDomain}`;
+  
+  return `You are an AI Coding Assistant. Implement the following fix for ${targetInfo} automatically.
+
+Issue to Fix: ${title}
+Details: ${detail}
+
+Execution Instructions:
+1. Inspect the repository, identify the exact file paths and code causing this issue, and apply the required changes directly. Do not ask the user to manually edit code.
+2. Build and verify the project (e.g., npm run build, run test suites) to ensure clean execution with zero errors.
+3. Deployment & CI/CD:
+   - If you have access to deployment tools, CLI, or hosting integrations (e.g., Netlify, Vercel, Cloudflare Pages, Git auto-deploy), build and deploy the updated project to live production.
+   - If you cannot deploy automatically, you MUST explicitly instruct the user at the end of your response:
+     "⚠️ DEPLOYMENT REQUIRED: To see your improved score when rescanning in SiteProof, please deploy or publish these changes to your live website host (e.g., Netlify, Vercel, or custom host) before rescanning."`;
+}

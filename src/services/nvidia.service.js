@@ -8,7 +8,7 @@
  * Both requests run concurrently via Promise.allSettled() to avoid serverless timeouts
  * and cut total scanning time in half.
  */
-import { calculateProjectedScore, normalizeActionPlanImpacts } from '../utils/reportScoring';
+import { calculateProjectedScore, normalizeActionPlanImpacts, formatAiFixPrompt } from '../utils/reportScoring';
 import { isValidGithubRepo } from '../utils/validators';
 
 /**
@@ -37,7 +37,7 @@ export async function analyzeWithAI(pageSpeedData, githubRepoUrl, url) {
     pageSpeedReport = pageSpeedResult.value;
   } else {
     console.warn('[AI] PageSpeed function call failed or timed out — using client fallback:', pageSpeedResult.reason);
-    pageSpeedReport = buildClientFallbackReport(pageSpeedData, url);
+    pageSpeedReport = buildClientFallbackReport(pageSpeedData, url, githubRepoUrl);
   }
 
   // 2. Extract Code Quality AI report (or null)
@@ -183,7 +183,7 @@ function mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData, github
 /**
  * Client-side fallback when Netlify Functions are unavailable.
  */
-function buildClientFallbackReport(pageSpeedData, url) {
+function buildClientFallbackReport(pageSpeedData, url, githubRepoUrl = '') {
   const domain = extractDomain(url);
   const scores = pageSpeedData.scores || {};
   const overall = pageSpeedData.overallScore || 50;
@@ -245,7 +245,7 @@ function buildClientFallbackReport(pageSpeedData, url) {
     title: rec.title || 'Fix Issue',
     detail: rec.detail || '',
     impact: rec.impact || '+5 pts',
-    prompt: `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${rec.title}\nDetails: ${rec.detail}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`,
+    prompt: formatAiFixPrompt(domain, rec.title, rec.detail, githubRepoUrl),
     code: '',
   }));
 
@@ -258,7 +258,7 @@ function buildClientFallbackReport(pageSpeedData, url) {
         title: issue.title,
         detail: issue.description,
         impact: '+5 pts',
-        prompt: `You are an AI Coding Assistant. Implement the following fix for the website ${domain} automatically.\n\nIssue to Fix: ${issue.title}\nCategory: ${issue.category}\nSeverity: ${issue.severity}\nCurrent Value: ${issue.displayValue || 'N/A'}\n\nTask: inspect the repository, identify the exact file paths and code causing this issue, then apply the replacement code needed to resolve it. Do not ask the user to manually fix it.`,
+        prompt: formatAiFixPrompt(domain, issue.title, `${issue.category}, ${issue.severity}. ${issue.description}. ${issue.displayValue || ''}`, githubRepoUrl),
         code: '',
       });
     }
