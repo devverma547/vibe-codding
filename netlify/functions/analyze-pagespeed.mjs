@@ -461,12 +461,9 @@ Issue to Fix: ${title}
 Details: ${detail}
 
 Execution Instructions:
-1. Inspect the repository, identify the exact file paths and code causing this issue, and apply the required changes directly. Do not ask the user to manually edit code.
-2. Build and verify the project (e.g., npm run build, run test suites) to ensure clean execution with zero errors.
-3. Deployment & CI/CD:
-   - If you have access to deployment tools, CLI, or hosting integrations (e.g., Netlify, Vercel, Cloudflare Pages, Git auto-deploy), build and deploy the updated project to live production.
-   - If you cannot deploy automatically, you MUST explicitly instruct the user at the end of your response:
-     "⚠️ DEPLOYMENT REQUIRED: To see your improved score when rescanning in SiteProof, please deploy or publish these changes to your live website host (e.g., Netlify, Vercel, or custom host) before rescanning."`;
+1. Inspect the repository, identify the exact file paths and code causing this issue, and apply the required changes directly.
+2. Build and test the project (e.g., npm run build, run test suites) to ensure zero errors.
+3. Deploy the updated build to production (e.g., Netlify, Vercel, or Git push). If automated deployment is not available in your environment, state the exact deploy commands or steps needed to publish the changes live.`;
 }
 
 function extractJSON(text) {

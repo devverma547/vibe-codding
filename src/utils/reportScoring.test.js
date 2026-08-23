@@ -39,11 +39,10 @@ describe('report scoring helpers', () => {
     expect(extractImpactPoints('Ongoing')).toBe(0);
   });
 
-  it('generates fix prompts containing deployment instructions and fallback warning', () => {
+  it('generates fix prompts containing execution and deployment instructions', () => {
     const prompt = formatAiFixPrompt('my-app.netlify.app', 'Fix Contrast', 'Low contrast on buttons');
     expect(prompt).toContain('my-app.netlify.app');
     expect(prompt).toContain('Fix Contrast');
-    expect(prompt).toContain('Deployment & CI/CD:');
-    expect(prompt).toContain('DEPLOYMENT REQUIRED');
+    expect(prompt).toContain('Deploy the updated build to production');
   });
 });
