@@ -102,57 +102,55 @@ export default function ReportPage() {
 
   // Fetch report data
   useEffect(() => {
+    let isMounted = true;
     async function fetchReport() {
       if (!reportId) return;
-      const res = await scannerService.getReportByScanId(reportId);
-      if (res.success && res.data) {
-        const data = res.data;
-        setReportData(data);
-        
-        const clean = data.url?.replace(/^https?:\/\//, '').replace(/\/.*$/, '') || reportId;
-        setDomainName(clean);
-        
-        if (data.githubRepo) {
-          setGithubRepoUrl(data.githubRepo);
+      setIsInitialLoading(true);
+      try {
+        const res = await scannerService.getReportByScanId(reportId);
+        if (!isMounted) return;
+        if (res.success && res.data) {
+          const data = res.data;
+          setReportData(data);
+          
+          const clean = data.url?.replace(/^https?:\/\//, '').replace(/\/.*$/, '') || reportId;
+          setDomainName(clean);
+          
+          if (data.githubRepo) {
+            setGithubRepoUrl(data.githubRepo);
+          }
+          
+          const score = data.aiReport?.healthScore ?? data.overallScore ?? 0;
+          setTargetScore(score);
+        } else {
+          const clean = reportId.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+          setDomainName(clean);
+          setTargetScore(0);
         }
-        
-        // Determine the score to display
-        const score = data.aiReport?.healthScore ?? data.overallScore ?? 0;
-        setTargetScore(score);
-      } else {
-        // No data found, show domain from URL
-        const clean = reportId.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-        setDomainName(clean);
-        setTargetScore(0);
-        setIsInitialLoading(false);
-        setIsRescanning(false);
+      } catch (err) {
+        console.error('Failed to load report:', err);
+      } finally {
+        if (isMounted) {
+          setIsInitialLoading(false);
+        }
       }
     }
     fetchReport();
+    return () => { isMounted = false; };
   }, [reportId]);
 
   const scanDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(
     reportData?.createdAt ? new Date(reportData.createdAt) : new Date()
   );
 
-  // Loading animation sequence
+  // Loading step animation sequence
   useEffect(() => {
     if (!isInitialLoading && !isRescanning) return;
 
-    let currentStep = 0;
     setLoadingStep(0);
-    setDisplayScore(0);
-
     const interval = setInterval(() => {
-      currentStep++;
-      if (currentStep < loadingSteps.length) {
-        setLoadingStep(currentStep);
-      } else {
-        clearInterval(interval);
-        setIsInitialLoading(false);
-        setIsRescanning(false);
-      }
-    }, 400);
+      setLoadingStep((prev) => (prev + 1) % loadingSteps.length);
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [isInitialLoading, isRescanning]);
@@ -196,23 +194,27 @@ export default function ReportPage() {
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
-  const handleRescan = () => {
-    setIsRescanning(true);
-    setReportData(null);
-    
-    // Re-run the scan
+  const handleRescan = async () => {
     const url = reportData?.url || `https://${domainName}`;
-    scannerService.analyzeSite(url, githubRepoUrl, user?.id || null).then((res) => {
+    setIsRescanning(true);
+    setLoadingStep(0);
+    setDisplayScore(0);
+
+    try {
+      const res = await scannerService.analyzeSite(url, githubRepoUrl, user?.id || null);
       if (res.success && res.data) {
-        // Re-fetch the full report
-        scannerService.getReportByScanId(res.data.scanId).then((reportRes) => {
-          if (reportRes.success && reportRes.data) {
-            setReportData(reportRes.data);
-            setTargetScore(reportRes.data.aiReport?.healthScore ?? reportRes.data.overallScore ?? 0);
-          }
-        });
+        const reportRes = await scannerService.getReportByScanId(res.data.scanId);
+        if (reportRes.success && reportRes.data) {
+          setReportData(reportRes.data);
+          const score = reportRes.data.aiReport?.healthScore ?? reportRes.data.overallScore ?? 0;
+          setTargetScore(score);
+        }
       }
-    });
+    } catch (err) {
+      console.error('Rescan failed:', err);
+    } finally {
+      setIsRescanning(false);
+    }
   };
 
   // === EXTRACT DATA FROM REPORT ===
