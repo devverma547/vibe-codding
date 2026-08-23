@@ -64,13 +64,18 @@
 .btn-primary {
   background: var(--gradient-primary);
   background-size: 200% auto;
-  color: #fff;
+  color: #080C14;
+  font-weight: 700;
   border: 1px solid transparent;
 }
 .btn-primary:hover:not(:disabled) {
   background-position: right center;
   box-shadow: var(--shadow-glow);
   transform: translateY(-1px);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .btn-secondary {

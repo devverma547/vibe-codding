@@ -125,8 +125,9 @@ export default function Navbar() {
                   onClick={async () => { await logout(); navigate('/'); }}
                   className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-all cursor-pointer"
                   title="Log out"
+                  aria-label="Log out"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={18} aria-hidden="true" />
                 </button>
               </>
             ) : (
@@ -154,10 +155,14 @@ export default function Navbar() {
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
               className="fixed inset-0 bg-black/40 backdrop-blur-xs pointer-events-auto"
+              aria-hidden="true"
             />
 
             {/* Left Sliding Drawer Panel */}
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="SiteProof Navigation Drawer"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}

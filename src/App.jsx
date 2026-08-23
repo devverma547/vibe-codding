@@ -60,8 +60,16 @@ function App() {
           <AuthProvider>
             <ToastProvider>
               <div className="min-h-screen bg-slate-50 dark:bg-[#080C14] text-slate-900 dark:text-gray-100 font-sans flex flex-col selection:bg-[#00F5A0] selection:text-slate-950 transition-colors duration-300">
+                {/* Accessible Skip Link */}
+                <a
+                  href="#main-content"
+                  className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#00F5A0] focus:text-slate-950 focus:font-bold focus:rounded-lg focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+                >
+                  Skip to main content
+                </a>
+
                 <Navbar />
-                <main className="flex-1 pt-16 flex flex-col">
+                <main id="main-content" tabIndex="-1" className="flex-1 pt-16 flex flex-col focus:outline-none">
                   <Suspense fallback={<LoadingScreen message="Loading page..." />}>
                     <Routes>
                       {/* Public Routes */}

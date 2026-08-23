@@ -29,10 +29,20 @@ export const Card = ({
   
   const classes = `${baseClasses} ${hoverClasses} ${glassClasses} ${gradientClasses} ${paddingClasses[padding] || paddingClasses.md} ${className}`;
 
+  const handleKeyDown = (e) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick(e);
+    }
+  };
+
   return (
     <motion.div
       className={classes}
       onClick={onClick}
+      onKeyDown={onClick ? handleKeyDown : undefined}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}

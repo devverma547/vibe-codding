@@ -53,17 +53,19 @@ export default function HeroLiveQuickScan({ onFullScan }) {
               value={testUrl}
               onChange={(e) => setTestUrl(e.target.value)}
               placeholder="https://your-website.com"
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-xs sm:text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#00F5A0]"
+              aria-label="Website URL to audit"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#080C14] border border-slate-300 dark:border-white/10 text-xs sm:text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#00F5A0] focus-visible:ring-2 focus-visible:ring-[#00F5A0]"
             />
           </div>
           <div className="relative flex items-center">
-            <GitBranch className="absolute left-3 w-4 h-4 text-slate-400 dark:text-gray-500" />
+            <GitBranch className="absolute left-3 w-4 h-4 text-slate-400 dark:text-gray-500" aria-hidden="true" />
             <input
               type="text"
               value={githubRepo}
               onChange={(e) => setGithubRepo(e.target.value)}
               placeholder="GitHub Repo: https://github.com/user/repo (optional)"
-              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100/70 dark:bg-[#080C14]/70 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-gray-200 font-mono focus:outline-none focus:border-[#00F5A0]"
+              aria-label="GitHub Repository URL (optional)"
+              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100/70 dark:bg-[#080C14]/70 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-gray-200 font-mono focus:outline-none focus:border-[#00F5A0] focus-visible:ring-2 focus-visible:ring-[#00F5A0]"
             />
           </div>
         </div>

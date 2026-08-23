@@ -177,6 +177,18 @@ export default function ReportPage() {
 
     return () => clearInterval(timer);
   }, [isInitialLoading, isRescanning, targetScore]);
+
+  // Close fix modal on Escape key press
+  useEffect(() => {
+    if (!activeFixModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setActiveFixModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeFixModal]);
   
   const handleCopyPrompt = (prompt) => {
     navigator.clipboard.writeText(prompt);
@@ -854,7 +866,7 @@ export default function ReportPage() {
 
       </div>
 
-      {/* AI FIX ASSISTANT MODAL */}
+      {/* AI FIX PROMPT MODAL */}
       <AnimatePresence>
         {activeFixModal && (
           <motion.div 
@@ -864,6 +876,9 @@ export default function ReportPage() {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
           >
             <motion.div 
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="report-fix-modal-title"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -872,14 +887,15 @@ export default function ReportPage() {
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-white/10 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <Sparkles className="text-[#00F5A0]" size={20} />
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">AI Fix Prompt — {activeFixModal.title}</h3>
+                  <Sparkles className="text-[#00F5A0]" size={20} aria-hidden="true" />
+                  <h3 id="report-fix-modal-title" className="text-base font-bold text-slate-900 dark:text-white">AI Fix Prompt — {activeFixModal.title}</h3>
                 </div>
                 <button 
                   onClick={() => setActiveFixModal(null)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                  aria-label="Close modal"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0]"
                 >
-                  <X size={18} />
+                  <X size={18} aria-hidden="true" />
                 </button>
               </div>
 
@@ -901,12 +917,13 @@ export default function ReportPage() {
                   {/* Prompt Box */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 flex items-center gap-1.5"><Code size={14}/> LLM Prompt — Paste into v0 / Bolt / Cursor</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 flex items-center gap-1.5"><Code size={14} aria-hidden="true" /> LLM Prompt — Paste into v0 / Bolt / Cursor</span>
                       <button
                         onClick={() => handleCopyPrompt(activeFixModal.prompt)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#00F5A0] hover:bg-[#00F5A0]/10 transition-colors flex items-center gap-1.5 cursor-pointer border border-[#00F5A0]/30"
+                        aria-label="Copy AI fix prompt to clipboard"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-600 dark:text-[#00F5A0] hover:bg-[#00F5A0]/10 transition-colors flex items-center gap-1.5 cursor-pointer border border-emerald-500/30 dark:border-[#00F5A0]/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0]"
                       >
-                        {copiedPrompt ? <Check size={12} /> : <Copy size={12} />}
+                        {copiedPrompt ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
                         {copiedPrompt ? 'Copied!' : 'Copy Prompt 📋'}
                       </button>
                     </div>
@@ -940,7 +957,7 @@ export default function ReportPage() {
               <div className="p-6 border-t border-slate-200 dark:border-white/10 shrink-0 flex justify-end bg-slate-50 dark:bg-black/20">
                 <button
                   onClick={() => setActiveFixModal(null)}
-                  className="px-6 py-2.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm cursor-pointer shadow-[0_0_15px_rgba(0,245,160,0.2)]"
+                  className="px-6 py-2.5 rounded-xl bg-[#00F5A0] hover:bg-[#00E093] text-slate-950 font-bold text-sm cursor-pointer shadow-[0_0_15px_rgba(0,245,160,0.2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
                 >
                   Done
                 </button>

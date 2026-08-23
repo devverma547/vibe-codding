@@ -473,12 +473,16 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Persona Tabs Header */}
-            <div className="flex justify-center gap-2 p-1.5 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-300 dark:border-white/10 max-w-md mx-auto">
+            <div role="tablist" aria-label="Target personas" className="flex justify-center gap-2 p-1.5 rounded-xl bg-slate-200/60 dark:bg-white/5 border border-slate-300 dark:border-white/10 max-w-md mx-auto">
               {Object.keys(personas).map((key) => (
                 <button
                   key={key}
+                  id={`persona-tab-${key}`}
+                  role="tab"
+                  aria-selected={activePersona === key}
+                  aria-controls={`persona-panel-${key}`}
                   onClick={() => setActivePersona(key)}
-                  className={`relative flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all capitalize cursor-pointer z-10 ${
+                  className={`relative flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all capitalize cursor-pointer z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0] ${
                     activePersona === key 
                       ? 'text-slate-950' 
                       : 'text-slate-700 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
@@ -500,6 +504,9 @@ export default function LandingPage() {
             <AnimatePresence mode="wait">
               <motion.div 
                 key={activePersona}
+                id={`persona-panel-${activePersona}`}
+                role="tabpanel"
+                aria-labelledby={`persona-tab-${activePersona}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -589,8 +596,8 @@ export default function LandingPage() {
         </section>
 
         {/* FAQ ACCORDION SECTION */}
-        <section className="py-20 bg-slate-100 dark:bg-[#060912] border-t border-slate-200 dark:border-white/5">
-          <div className="max-w-3xl mx-auto px-4 space-y-8">
+        <section className="py-20 bg-slate-50 dark:bg-[#080C14] border-t border-slate-200 dark:border-white/5">
+          <div className="max-w-4xl mx-auto px-4 space-y-8">
             <motion.div 
               className="text-center space-y-2"
               initial={{ opacity: 0, y: 20 }}
@@ -612,20 +619,26 @@ export default function LandingPage() {
                   className="rounded-xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm dark:shadow-none"
                 >
                   <button
+                    id={`faq-question-${idx}`}
+                    aria-expanded={openFaqIndex === idx}
+                    aria-controls={`faq-answer-${idx}`}
                     onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
-                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-slate-900 dark:text-white hover:text-[#00F5A0] transition-colors cursor-pointer"
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-slate-900 dark:text-white hover:text-[#00F5A0] transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0]"
                   >
                     <span>{faq.question}</span>
                     <motion.div
                       animate={{ rotate: openFaqIndex === idx ? 180 : 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <ChevronDown className="w-5 h-5 text-[#00F5A0]" />
+                      <ChevronDown className="w-5 h-5 text-[#00F5A0]" aria-hidden="true" />
                     </motion.div>
                   </button>
                   <AnimatePresence>
                     {openFaqIndex === idx && (
                       <motion.div
+                        id={`faq-answer-${idx}`}
+                        role="region"
+                        aria-labelledby={`faq-question-${idx}`}
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}

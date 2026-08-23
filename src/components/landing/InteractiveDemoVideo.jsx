@@ -24,30 +24,42 @@ export default function InteractiveDemoVideo() {
           </div>
 
           {/* Interactive Feature Tabs */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10 w-full sm:w-auto">
+          <div role="tablist" aria-label="Interactive Audit Demo Tabs" className="flex flex-wrap sm:flex-nowrap items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10 w-full sm:w-auto">
             <button
+              id="demo-tab-scan"
+              role="tab"
+              aria-selected={activeTab === 'scan'}
+              aria-controls="demo-panel-scan"
               onClick={() => setActiveTab('scan')}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer ${
-                activeTab === 'scan' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-400 hover:text-white'
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0] ${
+                activeTab === 'scan' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-300 hover:text-white'
               }`}
             >
-              <Eye size={13} className="inline mr-1.5" /> Live Scan Demo
+              <Eye size={13} className="inline mr-1.5" aria-hidden="true" /> Live Scan Demo
             </button>
             <button
+              id="demo-tab-fixes"
+              role="tab"
+              aria-selected={activeTab === 'fixes'}
+              aria-controls="demo-panel-fixes"
               onClick={() => setActiveTab('fixes')}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer ${
-                activeTab === 'fixes' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-400 hover:text-white'
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0] ${
+                activeTab === 'fixes' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-300 hover:text-white'
               }`}
             >
-              <Code size={13} className="inline mr-1.5" /> AI Fix Generator
+              <Code size={13} className="inline mr-1.5" aria-hidden="true" /> AI Fix Generator
             </button>
             <button
+              id="demo-tab-comparison"
+              role="tab"
+              aria-selected={activeTab === 'comparison'}
+              aria-controls="demo-panel-comparison"
               onClick={() => setActiveTab('comparison')}
-              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer ${
-                activeTab === 'comparison' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-400 hover:text-white'
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-all text-center whitespace-nowrap cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0] ${
+                activeTab === 'comparison' ? 'bg-[#00F5A0] text-slate-950 font-bold shadow-[0_0_12px_rgba(0,245,160,0.3)]' : 'text-gray-300 hover:text-white'
               }`}
             >
-              <Sparkles size={13} className="inline mr-1.5" /> Before / After
+              <Sparkles size={13} className="inline mr-1.5" aria-hidden="true" /> Before / After
             </button>
           </div>
         </div>
@@ -56,11 +68,14 @@ export default function InteractiveDemoVideo() {
         <div className="relative min-h-[380px] bg-[#04060C] flex flex-col justify-between p-6 overflow-hidden">
           
           {/* Subtle Grid overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" aria-hidden="true" />
 
           {/* TAB CONTENT 1: LIVE SCAN IN ACTION */}
           {activeTab === 'scan' && (
             <motion.div
+              id="demo-panel-scan"
+              role="tabpanel"
+              aria-labelledby="demo-tab-scan"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="relative z-10 space-y-6"
@@ -111,19 +126,22 @@ export default function InteractiveDemoVideo() {
           {/* TAB CONTENT 2: AI CODE FIX GENERATOR */}
           {activeTab === 'fixes' && (
             <motion.div
+              id="demo-panel-fixes"
+              role="tabpanel"
+              aria-labelledby="demo-tab-fixes"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="relative z-10 space-y-4"
             >
               <div className="flex items-center justify-between">
                 <div className="text-xs font-mono text-[#00F5A0] font-semibold flex items-center gap-2">
-                  <Code size={14} /> SiteProof AI Code Generator Output
+                  <Code size={14} aria-hidden="true" /> SiteProof AI Code Generator Output
                 </div>
                 <span className="text-xs text-gray-400 font-mono">vercel.json / headers.config</span>
               </div>
 
               <div className="bg-[#020408] border border-emerald-500/30 rounded-xl p-4 font-mono text-xs text-gray-300 leading-relaxed space-y-2 shadow-[0_0_20px_rgba(0,245,160,0.1)]">
-                <div className="text-gray-500">// Copy and paste into your project root to immediately fix 2 critical issues:</div>
+                <div className="text-gray-400">// Copy and paste into your project root to immediately fix 2 critical issues:</div>
                 <div className="text-emerald-400">{"{"}</div>
                 <div className="pl-4 text-emerald-400">{"\"headers\": ["}</div>
                 <div className="pl-8 text-blue-300">{"{"}</div>
@@ -142,20 +160,23 @@ export default function InteractiveDemoVideo() {
           {/* TAB CONTENT 3: BEFORE VS AFTER COMPARISON */}
           {activeTab === 'comparison' && (
             <motion.div
+              id="demo-panel-comparison"
+              role="tabpanel"
+              aria-labelledby="demo-tab-comparison"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 my-auto"
             >
               <div className="p-6 rounded-xl bg-red-500/5 border border-red-500/20 text-center space-y-3">
                 <div className="text-xs font-mono text-red-400 uppercase tracking-widest font-bold">BEFORE AUDIT</div>
-                <div className="text-5xl font-extrabold text-red-400 font-mono">64<span className="text-lg font-normal text-gray-500">/100</span></div>
-                <p className="text-xs text-gray-400">7 Critical security header failures & unoptimized hero images.</p>
+                <div className="text-5xl font-extrabold text-red-400 font-mono">64<span className="text-lg font-normal text-gray-400">/100</span></div>
+                <p className="text-xs text-gray-300">7 Critical security header failures & unoptimized hero images.</p>
               </div>
 
               <div className="p-6 rounded-xl bg-[#00F5A0]/10 border border-[#00F5A0]/30 text-center space-y-3 shadow-[0_0_30px_rgba(0,245,160,0.15)]">
                 <div className="text-xs font-mono text-[#00F5A0] uppercase tracking-widest font-bold">AFTER SITEPROOF FIXES</div>
-                <div className="text-5xl font-extrabold text-[#00F5A0] font-mono">91<span className="text-lg font-normal text-gray-500">/100</span></div>
-                <p className="text-xs text-[#00F5A0]/90 font-medium">100% WCAG compliant, fast LCP under 0.8s, full SSL headers.</p>
+                <div className="text-5xl font-extrabold text-[#00F5A0] font-mono">91<span className="text-lg font-normal text-gray-400">/100</span></div>
+                <p className="text-xs text-emerald-300 font-medium">100% WCAG compliant, fast LCP under 0.8s, full SSL headers.</p>
               </div>
             </motion.div>
           )}

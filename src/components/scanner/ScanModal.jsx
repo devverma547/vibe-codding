@@ -114,6 +114,17 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
     return () => clearInterval(stepInterval);
   }, [isOpen, targetUrl, githubRepo, user?.id]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const displayUrl = targetUrl || 'https://your-site.com';
@@ -123,6 +134,9 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl overflow-y-auto">
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="scan-modal-title"
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -132,14 +146,14 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-[#080C14]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#00F5A0]/10 border border-[#00F5A0]/30 flex items-center justify-center text-[#00F5A0]">
-              <ShieldCheck size={18} />
+              <ShieldCheck size={18} aria-hidden="true" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2 flex-wrap">
+              <h3 id="scan-modal-title" className="text-base font-bold text-white flex items-center gap-2 flex-wrap">
                 Scanning Site <span className="text-[#00F5A0] font-mono text-sm font-normal">{displayUrl}</span>
                 {githubRepo && (
                   <span className="text-xs bg-white/10 text-gray-300 px-2 py-0.5 rounded-full font-mono font-normal flex items-center gap-1">
-                    <GitBranch size={10} className="text-[#00F5A0]" /> {githubRepo.replace('https://github.com/', '')}
+                    <GitBranch size={10} className="text-[#00F5A0]" aria-hidden="true" /> {githubRepo.replace('https://github.com/', '')}
                   </span>
                 )}
               </h3>
@@ -153,9 +167,10 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Close scan modal"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00F5A0]"
           >
-            <X size={18} />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
 
