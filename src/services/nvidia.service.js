@@ -16,14 +16,15 @@ import { isValidGithubRepo } from '../utils/validators';
  * @param {object} pageSpeedData - Parsed PageSpeed/Lighthouse results
  * @param {string|null} githubRepoUrl - GitHub repo URL (or null)
  * @param {string} url - The scanned website URL
+ * @param {Promise|null} [inFlightCodePromise] - Pre-fetched code analysis promise (for early parallel execution)
  * @returns {Promise<object>} Combined 6-module AI audit report
  */
-export async function analyzeWithAI(pageSpeedData, githubRepoUrl, url) {
+export async function analyzeWithAI(pageSpeedData, githubRepoUrl, url, inFlightCodePromise = null) {
   const hasGithub = Boolean(githubRepoUrl && isValidGithubRepo(githubRepoUrl).valid);
 
   // Trigger parallel requests
   const pageSpeedPromise = fetchPageSpeedAnalysis(pageSpeedData, url);
-  const codePromise = hasGithub ? fetchCodeAnalysis(githubRepoUrl, url) : null;
+  const codePromise = inFlightCodePromise || (hasGithub ? fetchCodeAnalysis(githubRepoUrl, url) : null);
 
   const promises = codePromise ? [pageSpeedPromise, codePromise] : [pageSpeedPromise];
   const results = await Promise.allSettled(promises);

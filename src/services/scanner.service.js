@@ -20,8 +20,8 @@
  *     9. Return enriched report data
  */
 import { runLighthouseAnalysis } from './lighthouse.service';
-import { analyzeWithAI } from './nvidia.service';
-import { scanService, reportCache } from './database.service';
+import { analyzeWithAI, fetchCodeAnalysis } from './nvidia.service';
+import { scanService, reportCache, urlCache } from './database.service';
 import { sanitizeUrl, isValidUrl, sanitizeGithubRepo, isValidGithubRepo } from '../utils/validators';
 
 export const scannerService = {
@@ -30,14 +30,25 @@ export const scannerService = {
    * @param {string} url - URL to scan
    * @param {string} [githubRepoOrUserId] - GitHub repo URL, owner/repo, or legacy user ID
    * @param {string|function} [userIdOrProgress] - User ID or progress callback
-   * @param {function} [onProgress] - Progress callback(percent, step, message)
-   * @returns {Promise<{success: boolean, data?: object, error?: string}>}
+   * @param {function|object} [onProgressOrOptions] - Progress callback(percent, step, message) or options
+   * @param {object} [maybeOptions] - Options { forceRefresh?: boolean }
+   * @returns {Promise<{success: boolean, data?: object, isCached?: boolean, error?: string}>}
    */
-  analyzeSite: async (url, githubRepoOrUserId, userIdOrProgress, onProgress) => {
+  analyzeSite: async (url, githubRepoOrUserId, userIdOrProgress, onProgressOrOptions, maybeOptions) => {
     try {
       let githubRepo = '';
       let userId = null;
-      let progressCb = onProgress;
+      let progressCb = null;
+      let options = {};
+
+      if (typeof onProgressOrOptions === 'object' && onProgressOrOptions !== null) {
+        options = onProgressOrOptions;
+      } else if (typeof onProgressOrOptions === 'function') {
+        progressCb = onProgressOrOptions;
+        if (typeof maybeOptions === 'object' && maybeOptions !== null) {
+          options = maybeOptions;
+        }
+      }
 
       if (typeof githubRepoOrUserId === 'function') {
         progressCb = githubRepoOrUserId;
@@ -45,8 +56,11 @@ export const scannerService = {
         githubRepo = sanitizeGithubRepo(githubRepoOrUserId);
         userId = typeof userIdOrProgress === 'string' ? userIdOrProgress : null;
         if (typeof userIdOrProgress === 'function') progressCb = userIdOrProgress;
+      } else if (typeof githubRepoOrUserId === 'string') {
+        userId = githubRepoOrUserId;
+        if (typeof userIdOrProgress === 'function') progressCb = userIdOrProgress;
       } else {
-        userId = typeof githubRepoOrUserId === 'string' ? githubRepoOrUserId : null;
+        userId = typeof userIdOrProgress === 'string' ? userIdOrProgress : null;
         if (typeof userIdOrProgress === 'function') progressCb = userIdOrProgress;
       }
 
@@ -58,9 +72,40 @@ export const scannerService = {
       }
       const finalUrl = urlCheck.url || formattedUrl;
 
+      // 2. Strategy 2: Smart URL Cache Check (instant return in ~0.05s unless forceRefresh is set)
+      if (!options.forceRefresh) {
+        const cached = urlCache.get(finalUrl, githubRepo);
+        if (cached) {
+          if (progressCb) {
+            progressCb(20, 0, '⚡ Checking cache for previous scan...');
+            progressCb(100, 8, `⚡ Instant Load: Loaded cached report (${cached.cacheAgeMinutes || 0}m old)`);
+          }
+          return {
+            success: true,
+            isCached: true,
+            data: {
+              scanId: cached.scanId,
+              url: cached.url || finalUrl,
+              githubRepo: cached.githubRepo || githubRepo || '',
+              overallScore: cached.overallScore,
+              scores: cached.scores,
+              riskLevel: cached.riskLevel,
+              issuesCount: cached.issuesCount,
+              criticalCount: cached.criticalCount,
+              summary: cached.summary,
+              aiReport: cached.aiReport,
+              warnings: cached.warnings || [],
+              isCached: true,
+              cachedAt: cached.cachedAt,
+              cacheAgeMinutes: cached.cacheAgeMinutes,
+            },
+          };
+        }
+      }
+
       if (progressCb) progressCb(5, 0, 'Validating URL...');
 
-      // 2. Create scan record in Supabase
+      // 3. Create scan record in Supabase
       let scan = null;
       if (userId) {
         scan = await scanService.create(userId, finalUrl);
@@ -68,14 +113,20 @@ export const scannerService = {
       const scanId = scan?.id || crypto.randomUUID();
       const isLocal = !scan || scan._local;
 
-      if (progressCb) progressCb(10, 1, 'Connecting to Google PageSpeed API...');
+      if (progressCb) progressCb(10, 1, 'Starting parallel audit pipeline...');
 
-      // 3. Run PageSpeed Insights (CLIENT-SIDE — public API key, no security risk)
+      // 4. Strategy 1: Parallel Execution Engine
+      //    Concurrently dispatch GitHub extraction & Code Quality at t=0 alongside PageSpeed!
+      const hasGithub = Boolean(githubRepo && isValidGithubRepo(githubRepo).valid);
+      const inFlightCodePromise = hasGithub ? fetchCodeAnalysis(githubRepo, finalUrl) : null;
+
       let lighthouseResults;
       try {
-        if (progressCb) progressCb(15, 2, 'Running Google PageSpeed Insights audit...');
+        if (progressCb) progressCb(15, 2, hasGithub
+          ? 'Running parallel scans: Google PageSpeed + GitHub source code extraction...'
+          : 'Running Google PageSpeed Insights audit...');
         lighthouseResults = await runLighthouseAnalysis(finalUrl, 'mobile');
-        if (progressCb) progressCb(45, 3, 'PageSpeed analysis complete!');
+        if (progressCb) progressCb(55, 3, 'PageSpeed analysis complete!');
       } catch (lighthouseError) {
         if (userId && !isLocal) {
           await scanService.fail(scanId, lighthouseError.message, isLocal);
@@ -86,16 +137,13 @@ export const scannerService = {
         };
       }
 
-      // 4. Parallel Netlify Functions for AI analysis (SERVER-SIDE)
-      //    Calls analyze-pagespeed.mjs and analyze-code.mjs in parallel via Promise.allSettled()
-      if (progressCb) progressCb(50, 4, githubRepo
-        ? 'Running parallel AI scanning: PageSpeed + GitHub code extraction...'
-        : 'Running AI analysis (server-side)...');
+      // 5. Parallel Netlify Functions for AI analysis (PageSpeed AI + Code Review)
+      if (progressCb) progressCb(60, 4, 'Synthesizing audit reports with AI...');
 
       let aiReport = null;
       const warnings = [];
       try {
-        aiReport = await analyzeWithAI(lighthouseResults, githubRepo || null, finalUrl);
+        aiReport = await analyzeWithAI(lighthouseResults, githubRepo || null, finalUrl, inFlightCodePromise);
         if (progressCb) progressCb(85, 6, 'Parallel AI scanning complete!');
       } catch (aiError) {
         console.warn('[Scanner] AI analysis failed (using PageSpeed fallback):', aiError.message);
@@ -105,7 +153,7 @@ export const scannerService = {
 
       if (progressCb) progressCb(90, 7, 'Saving results...');
 
-      // 5. Save lightweight metadata to Supabase
+      // 6. Save lightweight metadata to Supabase
       const effectiveScore = aiReport?.healthScore ?? lighthouseResults.overallScore;
       const aiWarnings = Array.isArray(aiReport?.warnings) ? aiReport.warnings : [];
       const allWarnings = [...warnings, ...aiWarnings];
@@ -117,7 +165,7 @@ export const scannerService = {
         }, isLocal);
       }
 
-      // 6. Save full report to Supabase Storage / cache
+      // 7. Save full report to Supabase Storage and Smart URL Cache
       const fullReport = {
         scanId,
         url: finalUrl,
@@ -129,6 +177,7 @@ export const scannerService = {
         createdAt: new Date().toISOString(),
       };
       await reportCache.save(scanId, fullReport);
+      urlCache.set(finalUrl, githubRepo, fullReport);
 
       if (progressCb) progressCb(100, 8, 'Analysis complete!');
 

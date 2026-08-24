@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { scannerService } from './scanner.service';
 import { runLighthouseAnalysis } from './lighthouse.service';
-import { analyzeWithAI } from './nvidia.service';
-import { scanService, reportCache } from './database.service';
+import { analyzeWithAI, fetchCodeAnalysis } from './nvidia.service';
+import { scanService, reportCache, urlCache } from './database.service';
 
 vi.mock('./lighthouse.service', () => ({
   runLighthouseAnalysis: vi.fn()
 }));
 
 vi.mock('./nvidia.service', () => ({
-  analyzeWithAI: vi.fn()
+  analyzeWithAI: vi.fn(),
+  fetchCodeAnalysis: vi.fn()
 }));
 
 vi.mock('./database.service', () => ({
@@ -20,15 +21,23 @@ vi.mock('./database.service', () => ({
   },
   reportCache: {
     save: vi.fn()
+  },
+  urlCache: {
+    get: vi.fn(() => null),
+    set: vi.fn(),
+    remove: vi.fn(),
+    clear: vi.fn()
   }
 }));
 
 describe('Scanner Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchCodeAnalysis.mockResolvedValue({ status: 'ok' });
+    urlCache.get.mockReturnValue(null);
   });
 
-  it('runs full scan successfully with AI and Github', async () => {
+  it('runs full scan successfully with AI and Github in parallel', async () => {
     // Mocks
     scanService.create.mockResolvedValueOnce({ id: 'scan-123', _local: false });
     
@@ -54,14 +63,60 @@ describe('Scanner Service', () => {
     
     // Verify services called
     expect(scanService.create).toHaveBeenCalledWith('user-123', 'https://example.com');
+    expect(fetchCodeAnalysis).toHaveBeenCalledWith('https://github.com/owner/repo', 'https://example.com');
     expect(runLighthouseAnalysis).toHaveBeenCalledWith('https://example.com', 'mobile');
-    expect(analyzeWithAI).toHaveBeenCalledWith(mockLighthouseResults, 'https://github.com/owner/repo', 'https://example.com');
+    expect(analyzeWithAI).toHaveBeenCalledWith(mockLighthouseResults, 'https://github.com/owner/repo', 'https://example.com', expect.any(Promise));
     
     expect(scanService.complete).toHaveBeenCalledWith('scan-123', expect.objectContaining({ overallScore: 85 }), false);
     expect(reportCache.save).toHaveBeenCalled();
+    expect(urlCache.set).toHaveBeenCalled();
     
     // Verify progress callbacks
     expect(onProgress).toHaveBeenCalled();
+  });
+
+  it('returns cached audit immediately on cache hit', async () => {
+    const mockCachedReport = {
+      scanId: 'cached-scan-999',
+      url: 'https://example.com',
+      overallScore: 94,
+      scores: {},
+      riskLevel: 'Low',
+      issuesCount: 0,
+      criticalCount: 0,
+      summary: 'Cached summary',
+      cacheAgeMinutes: 15,
+      cachedAt: new Date().toISOString()
+    };
+    urlCache.get.mockReturnValueOnce(mockCachedReport);
+
+    const onProgress = vi.fn();
+    const result = await scannerService.analyzeSite('https://example.com', null, 'user-123', onProgress);
+
+    expect(result.success).toBe(true);
+    expect(result.isCached).toBe(true);
+    expect(result.data.scanId).toBe('cached-scan-999');
+    expect(result.data.overallScore).toBe(94);
+    expect(runLighthouseAnalysis).not.toHaveBeenCalled();
+    expect(scanService.create).not.toHaveBeenCalled();
+  });
+
+  it('bypasses cache when forceRefresh option is true', async () => {
+    scanService.create.mockResolvedValueOnce({ id: 'fresh-scan-1', _local: false });
+    runLighthouseAnalysis.mockResolvedValueOnce({ overallScore: 88, scores: {}, riskLevel: 'Low', issuesCount: 0, criticalCount: 0 });
+    analyzeWithAI.mockResolvedValueOnce({ healthScore: 88, summary: 'Fresh scan', warnings: [] });
+
+    const result = await scannerService.analyzeSite(
+      'https://example.com',
+      null,
+      'user-123',
+      vi.fn(),
+      { forceRefresh: true }
+    );
+
+    expect(result.success).toBe(true);
+    expect(urlCache.get).not.toHaveBeenCalled();
+    expect(runLighthouseAnalysis).toHaveBeenCalled();
   });
 
   it('handles invalid URLs gracefully', async () => {

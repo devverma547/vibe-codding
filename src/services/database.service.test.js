@@ -78,6 +78,40 @@ describe('Database Service', () => {
     });
   });
 
+  describe('urlCache', () => {
+    it('sets and gets cached report within TTL', async () => {
+      const { urlCache } = await import('./database.service');
+      const testReport = { scanId: 'scan-cache-1', overallScore: 92, url: 'https://example.com' };
+      
+      urlCache.set('https://example.com', '', testReport);
+      const cached = urlCache.get('https://example.com', '');
+      
+      expect(cached).not.toBeNull();
+      expect(cached.isCached).toBe(true);
+      expect(cached.overallScore).toBe(92);
+      expect(cached.scanId).toBe('scan-cache-1');
+    });
+
+    it('returns null and purges expired cache', async () => {
+      const { urlCache } = await import('./database.service');
+      const testReport = { scanId: 'scan-expired', overallScore: 80 };
+      
+      urlCache.set('https://expired.com', '', testReport);
+      
+      // Request with 0ms TTL so it immediately expires
+      const cached = urlCache.get('https://expired.com', '', -1000);
+      expect(cached).toBeNull();
+    });
+
+    it('removes cache for a specific url', async () => {
+      const { urlCache } = await import('./database.service');
+      urlCache.set('https://remove-me.com', '', { score: 90 });
+      urlCache.remove('https://remove-me.com', '');
+      
+      expect(urlCache.get('https://remove-me.com', '')).toBeNull();
+    });
+  });
+
   describe('websiteService', () => {
     it('getAll returns websites for a user', async () => {
       const mockWebsites = [{ id: '1', url: 'https://test.com' }];

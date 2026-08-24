@@ -201,7 +201,7 @@ export default function ReportPage() {
     setDisplayScore(0);
 
     try {
-      const res = await scannerService.analyzeSite(url, githubRepoUrl, user?.id || null);
+      const res = await scannerService.analyzeSite(url, githubRepoUrl, user?.id || null, null, { forceRefresh: true });
       if (res.success && res.data) {
         const reportRes = await scannerService.getReportByScanId(res.data.scanId);
         if (reportRes.success && reportRes.data) {
@@ -432,6 +432,11 @@ export default function ReportPage() {
                 </a>
               )}
               <span className="text-xs text-slate-500 dark:text-gray-400">Scanned on {scanDate}</span>
+              {reportData?.isCached && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-[#00F5A0] border border-emerald-500/20">
+                  <Zap size={11} /> Fast Cache {reportData.cacheAgeMinutes !== undefined ? `(${reportData.cacheAgeMinutes}m ago)` : ''}
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
