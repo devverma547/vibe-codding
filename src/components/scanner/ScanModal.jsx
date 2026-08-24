@@ -52,7 +52,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
 
     const startTime = Date.now();
 
-    // Trigger the REAL scan pipeline
+    // Trigger the REAL fresh scan pipeline (with parallel multitasking)
     scannerService
       .analyzeSite(cleanUrl, githubRepo, user?.id || null, (pct, step, msg) => {
         // Real progress callback from the scanner
@@ -67,7 +67,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
           ...prev,
           `[${elapsed}s] ${msg}`,
         ]);
-      })
+      }, { forceRefresh: true })
       .then((res) => {
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 
