@@ -71,5 +71,5 @@ We use Netlify to host our server-side code (called Netlify Functions). This is 
 3. In your Netlify Dashboard, go to **Site Configuration > Environment variables**.
 4. Add the following **secret** variables directly into the Netlify dashboard (do *not* put these in your local `.env` file):
    *   `NVIDIA_API_KEY`: Your key from build.nvidia.com to run the AI models.
-   *   `NVIDIA_MODEL`: The AI model to use (e.g., `nvidia/nemotron-3-ultra-550b-a55b`).
+   *   `NVIDIA_MODEL`: The AI model to use (e.g., `deepseek-ai/deepseek-v4-flash-0731`).
    *   `GITHUB_TOKEN`: (Optional but recommended) A personal access token to prevent rate limits if your app talks to GitHub.

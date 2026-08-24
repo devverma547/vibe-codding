@@ -256,7 +256,7 @@ async function extractGithubCode(repoUrl) {
 
 async function callNvidiaCodeAI(githubData, githubRepoUrl, url) {
   const apiKey = process.env.NVIDIA_API_KEY;
-  const model = process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
+  const model = process.env.NVIDIA_MODEL || 'deepseek-ai/deepseek-v4-flash-0731';
 
   if (!apiKey) {
     console.warn('[NVIDIA-Code] No API key configured');
