@@ -55,7 +55,7 @@ export async function analyzeWithAI(pageSpeedData, githubRepoUrl, url) {
 /**
  * Call /.netlify/functions/analyze-pagespeed
  */
-async function fetchPageSpeedAnalysis(pageSpeedData, url) {
+export async function fetchPageSpeedAnalysis(pageSpeedData, url) {
   try {
     const response = await fetch('/.netlify/functions/analyze-pagespeed', {
       method: 'POST',
@@ -78,7 +78,7 @@ async function fetchPageSpeedAnalysis(pageSpeedData, url) {
 /**
  * Call /.netlify/functions/analyze-code
  */
-async function fetchCodeAnalysis(githubRepoUrl, url) {
+export async function fetchCodeAnalysis(githubRepoUrl, url) {
   try {
     const response = await fetch('/.netlify/functions/analyze-code', {
       method: 'POST',
@@ -101,7 +101,7 @@ async function fetchCodeAnalysis(githubRepoUrl, url) {
 /**
  * Merge PageSpeed AI report + Code Quality AI report into unified 6-module structure
  */
-function mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData, githubRepoUrl, url) {
+export function mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData, githubRepoUrl, url) {
   const warnings = [
     ...(pageSpeedReport.warnings || []),
     ...(codeReport?.warnings || []),

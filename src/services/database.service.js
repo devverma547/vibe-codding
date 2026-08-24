@@ -58,6 +58,84 @@ export const reportCache = {
   }
 };
 
+// ================================================================
+// URL CACHE — fast 24-hour instant retrieval by normalized URL
+// ================================================================
+export const DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+export function normalizeCacheUrl(url, githubRepo = '') {
+  if (!url) return '';
+  const cleanUrl = url.toLowerCase().trim().replace(/\/+$/, '');
+  const cleanRepo = githubRepo ? githubRepo.toLowerCase().trim().replace(/\/+$/, '') : '';
+  return cleanRepo ? `${cleanUrl}::${cleanRepo}` : cleanUrl;
+}
+
+export const urlCache = {
+  get(url, githubRepo = '', ttlMs = DEFAULT_CACHE_TTL_MS) {
+    if (typeof localStorage === 'undefined' || !url) return null;
+    try {
+      const key = `siteproof-url-cache-${normalizeCacheUrl(url, githubRepo)}`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const cached = JSON.parse(raw);
+      if (!cached || !cached.cachedAt || !cached.data) return null;
+
+      const ageMs = Date.now() - new Date(cached.cachedAt).getTime();
+      if (ageMs > ttlMs) {
+        localStorage.removeItem(key);
+        return null;
+      }
+
+      return {
+        ...cached.data,
+        isCached: true,
+        cachedAt: cached.cachedAt,
+        cacheAgeMinutes: Math.round(ageMs / 60000),
+      };
+    } catch {
+      return null;
+    }
+  },
+
+  set(url, githubRepo = '', reportData) {
+    if (typeof localStorage === 'undefined' || !url || !reportData) return;
+    try {
+      const key = `siteproof-url-cache-${normalizeCacheUrl(url, githubRepo)}`;
+      const payload = {
+        cachedAt: new Date().toISOString(),
+        url,
+        githubRepo: githubRepo || '',
+        data: reportData,
+      };
+      localStorage.setItem(key, JSON.stringify(payload));
+    } catch (err) {
+      console.warn('[UrlCache] Failed to save URL cache:', err.message);
+    }
+  },
+
+  remove(url, githubRepo = '') {
+    if (typeof localStorage === 'undefined' || !url) return;
+    try {
+      const key = `siteproof-url-cache-${normalizeCacheUrl(url, githubRepo)}`;
+      localStorage.removeItem(key);
+    } catch { /* ignore */ }
+  },
+
+  clear() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('siteproof-url-cache-')) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch { /* ignore */ }
+  }
+};
+
 function getLocalReportKey(scanId) {
   return `siteproof-report-${scanId}`;
 }
