@@ -171,7 +171,7 @@ Produce a JSON object with this exact structure.
 1. ALWAYS produce exactly 5 auditBreakdown entries, one for each category: ${CATEGORIES_5.join(', ')}.
 2. DO NOT invent or fabricate data. Every check label MUST reference a specific metric or audit result.
 3. SCORES MUST BE REAL: Your module scores (0.0 to 10.0) MUST be mathematically derived from PageSpeed scores provided (e.g. 85 = 8.5).
-4. FIX PROMPTS MUST BE ACTIONABLE & INCLUDE DEPLOYMENT: Every prompt in `fixPrompts` MUST instruct the AI coding assistant to:
+4. FIX PROMPTS MUST BE ACTIONABLE & INCLUDE DEPLOYMENT: Every prompt in 'fixPrompts' MUST instruct the AI coding assistant to:
    - Identify root causes and apply replacement code directly to the repository.
    - Run build/tests to verify correctness.
    - Automatically build and deploy the changes (e.g., Netlify, Vercel, Git CI/CD) if it has deploy tools/permissions.

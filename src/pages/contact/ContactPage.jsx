@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Mail, Send, CheckCircle2, Bug, Lightbulb, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Mail, Send, CheckCircle2, Bug, Lightbulb, AlertCircle } from 'lucide-react';
 import { contactService } from '../../services/database.service';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [savedTicket, setSavedTicket] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -17,8 +16,7 @@ export default function ContactPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const result = await contactService.save(formData);
-      setSavedTicket(result.data);
+      await contactService.save(formData);
       setSubmitted(true);
     } catch (err) {
       console.error('Failed to submit contact message:', err);
@@ -113,7 +111,6 @@ export default function ContactPage() {
                   <button
                     onClick={() => {
                       setSubmitted(false);
-                      setSavedTicket(null);
                       setFormData({ name: '', email: '', subject: 'Report a Bug / Website Issue', message: '' });
                     }}
                     className="px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white text-sm font-semibold hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"

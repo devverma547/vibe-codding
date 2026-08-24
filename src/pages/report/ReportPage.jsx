@@ -5,7 +5,7 @@ import {
   ShieldCheck, RefreshCw, Printer, AlertTriangle, CheckCircle2, 
   XCircle, ArrowUpRight, Copy, Check, Sparkles, X, Code, Activity, GitBranch,
   Zap, Eye, Smartphone, FileText, Scale, Wrench, TrendingUp, Server, Palette,
-  Info, Globe, Database
+  Globe
 } from 'lucide-react';
 import { scannerService } from '../../services/scanner.service';
 import { useAuth } from '../../contexts/AuthContext';
