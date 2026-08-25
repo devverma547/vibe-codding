@@ -14,6 +14,7 @@ import { calculateProjectedScore, normalizeActionPlanImpacts } from '../../utils
 const loadingSteps = [
   "Initializing SiteProof audit engine...",
   "Running Google PageSpeed Insights...",
+  "Querying Mozilla Observatory API for security grading...",
   "Extracting source code from GitHub...",
   "Analyzing security headers & SSL certificates...",
   "Running Lighthouse performance profile...",
@@ -50,6 +51,8 @@ function getCategoryIcon(id) {
 // Source label helper
 function getSourceLabel(source) {
   switch (source) {
+    case 'mozilla-observatory':
+      return { label: 'Mozilla Observatory', icon: ShieldCheck, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' };
     case 'google-pagespeed':
     case 'pagespeed-fallback':
       return { label: 'Google PageSpeed', icon: Globe, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
@@ -223,6 +226,7 @@ export default function ReportPage() {
 
   // === EXTRACT DATA FROM REPORT ===
   const ai = reportData?.aiReport || null;
+  const observatory = reportData?.observatory || null;
   
   // IDs of modules that don't have real scanners yet (enforced client-side)
   const COMING_SOON_MODULE_IDS = new Set([
@@ -490,8 +494,18 @@ export default function ReportPage() {
               {/* Stat Summary Pills */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2 text-xs">
                 {reportData?.scores && (
-                  <div className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-gray-300">
-                    Security: <span className="font-bold text-slate-900 dark:text-white font-mono">{reportData.scores.security ?? '-'}/100</span>
+                  <div className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-gray-300 flex items-center gap-2">
+                    <span>Security: <span className="font-bold text-slate-900 dark:text-white font-mono">{reportData.scores.security ?? '-'}/100</span></span>
+                    {observatory?.grade && (
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                        observatory.grade.startsWith('A') ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
+                        observatory.grade.startsWith('B') ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30' :
+                        observatory.grade.startsWith('C') ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30' :
+                        'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
+                      }`}>
+                        MDN Grade {observatory.grade}
+                      </span>
+                    )}
                   </div>
                 )}
                 <div className="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400">
@@ -655,6 +669,37 @@ export default function ReportPage() {
                     </div>
 
                     <p className="text-xs text-slate-600 dark:text-gray-400 leading-relaxed">{m.description}</p>
+
+                    {/* Mozilla Observatory Highlight Banner if security module */}
+                    {m.id === 'security' && (m.observatory || observatory) && (
+                      <div className="p-3 rounded-xl bg-orange-500/5 dark:bg-orange-950/20 border border-orange-500/20 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck size={16} className="text-orange-500 shrink-0" />
+                          <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                            MDN HTTP Observatory:
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
+                            (m.observatory?.grade || observatory?.grade || 'B').startsWith('A') ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
+                            (m.observatory?.grade || observatory?.grade || 'B').startsWith('B') ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30' :
+                            (m.observatory?.grade || observatory?.grade || 'B').startsWith('C') ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30' :
+                            'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30'
+                          }`}>
+                            Grade {m.observatory?.grade || observatory?.grade || 'B'}
+                          </span>
+                        </div>
+                        {(m.observatory?.details_url || observatory?.details_url) && (
+                          <a
+                            href={m.observatory?.details_url || observatory?.details_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:underline flex items-center gap-1 shrink-0"
+                          >
+                            <span>View MDN Report</span>
+                            <ArrowUpRight size={12} />
+                          </a>
+                        )}
+                      </div>
+                    )}
 
                     {/* Progress bar */}
                     <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">

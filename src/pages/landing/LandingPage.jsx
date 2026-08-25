@@ -55,7 +55,7 @@ export default function LandingPage() {
     {
       icon: <Shield className="w-5 h-5 text-red-400" />,
       title: "Security & Header Analysis",
-      description: "Exposed .env keys, missing CSP/HSTS headers, & script injection risks.",
+      description: "Live Mozilla Observatory API grading, missing CSP/HSTS headers, & script injection risks.",
       num: '01'
     },
     {

@@ -170,7 +170,7 @@ function runSyntheticAnalysis(url, reason = 'Synthetic Rate Limit Fallback') {
 /**
  * Parse raw PageSpeed API response into our report format
  */
-function parseLighthouseResults(data, url) {
+export function parseLighthouseResults(data, url) {
   const lhr = data.lighthouseResult || {};
   const categories = lhr.categories || {};
   const audits = lhr.audits || {};
@@ -310,7 +310,7 @@ function buildCategoryAuditMap(categories) {
  * - 5 real modules: checks are built from actual PageSpeed audit results
  * - 7 coming soon modules: marked with comingSoon flag, no fake data
  */
-function buildModules(scores, audits = {}, categories = {}) {
+export function buildModules(scores, audits = {}, categories = {}, observatoryData = null) {
   const isHttps = audits['is-on-https']?.score === 1 || scores.security >= 70;
 
   /**
@@ -364,13 +364,21 @@ function buildModules(scores, audits = {}, categories = {}) {
     return checks.slice(0, 5);
   }
 
-  // ===== 5 REAL MODULES (backed by Google PageSpeed data) =====
+  const hasObservatory = Boolean(observatoryData && (observatoryData.grade || observatoryData.score !== undefined));
+  const securityScoreVal = hasObservatory ? observatoryData.score : (scores.security || 80);
+  const securityChecks = hasObservatory && observatoryData.checks && observatoryData.checks.length > 0
+    ? observatoryData.checks
+    : buildSecurityChecks();
+
+  // ===== 5 REAL MODULES (backed by Google PageSpeed & Mozilla Observatory data) =====
   const realModules = [
     {
       id: 'security',
-      title: 'Security & Security Headers',
-      scoreVal: scores.security || 80,
-      checks: buildSecurityChecks(),
+      title: hasObservatory ? `Security (MDN Grade ${observatoryData.grade || 'B'})` : 'Security & Security Headers',
+      scoreVal: securityScoreVal,
+      checks: securityChecks,
+      source: hasObservatory ? 'mozilla-observatory' : 'google-pagespeed',
+      observatory: observatoryData || null,
       comingSoon: false,
     },
     {
@@ -378,6 +386,7 @@ function buildModules(scores, audits = {}, categories = {}) {
       title: 'Performance & Core Web Vitals',
       scoreVal: scores.performance || 75,
       checks: buildRealChecks('performance', scores.performance || 75),
+      source: 'google-pagespeed',
       comingSoon: false,
     },
     {
@@ -385,6 +394,7 @@ function buildModules(scores, audits = {}, categories = {}) {
       title: 'SEO & Indexing Metadata',
       scoreVal: scores.seo || 85,
       checks: buildRealChecks('seo', scores.seo || 85),
+      source: 'google-pagespeed',
       comingSoon: false,
     },
     {
@@ -392,6 +402,7 @@ function buildModules(scores, audits = {}, categories = {}) {
       title: 'Accessibility & ARIA Compliance',
       scoreVal: scores.accessibility || 80,
       checks: buildRealChecks('accessibility', scores.accessibility || 80),
+      source: 'google-pagespeed',
       comingSoon: false,
     },
     {
@@ -399,6 +410,7 @@ function buildModules(scores, audits = {}, categories = {}) {
       title: 'Best Practices & Modern Web Standards',
       scoreVal: scores.bestPractices || 85,
       checks: buildRealChecks('best-practices', scores.bestPractices || 85),
+      source: 'google-pagespeed',
       comingSoon: false,
     },
   ];
@@ -426,9 +438,13 @@ function buildModules(scores, audits = {}, categories = {}) {
     const scoreNum = Math.min(10, Math.max(1, (cfg.scoreVal / 10))).toFixed(1);
     const passCount = cfg.checks.filter(c => c.status === 'pass').length;
     const failCount = cfg.checks.filter(c => c.status === 'fail').length;
-    const description = failCount > 0
+    let description = failCount > 0
       ? `${failCount} check(s) failed. ${passCount} passed.`
       : `${passCount} / ${cfg.checks.length} checks passed.`;
+
+    if (cfg.id === 'security' && hasObservatory) {
+      description = `MDN Observatory Grade ${observatoryData.grade || 'B'} · ${observatoryData.tests_passed || passCount}/${observatoryData.tests_quantity || cfg.checks.length} security tests passed.`;
+    }
 
     return {
       id: cfg.id,
@@ -436,6 +452,8 @@ function buildModules(scores, audits = {}, categories = {}) {
       score: scoreNum,
       description,
       checks: cfg.checks,
+      source: cfg.source || 'google-pagespeed',
+      observatory: cfg.observatory || null,
       comingSoon: false,
     };
   });

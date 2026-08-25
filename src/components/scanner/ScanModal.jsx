@@ -9,9 +9,9 @@ const steps = [
   { title: 'Connecting to Host & Parsing DOM', detail: 'Fetching headers, TLS certificates, and DNS records...' },
   { title: 'Running Google PageSpeed Insights', detail: 'Measuring performance, SEO, accessibility, and best practices via Lighthouse API...' },
   { title: 'Extracting Source Code from GitHub', detail: 'Fetching repository file tree and reading critical source files...' },
-  { title: 'Security & Vulnerability Audit', detail: 'Checking HTTPS, security headers, and running vulnerability scans...' },
+  { title: 'Live Mozilla Observatory Security Audit', detail: 'Querying MDN Observatory API for TLS, HSTS, CSP, and security grading...' },
   { title: 'Core Web Vitals & Payload Metrics', detail: 'Analyzing LCP, CLS, FCP, INP, TTFB, and image optimization...' },
-  { title: 'Sending to AI for Deep Analysis', detail: 'Bundling PageSpeed + source code for 6-module audit report...' },
+  { title: 'Sending to AI for Deep Analysis', detail: 'Bundling PageSpeed + source code + Mozilla security for 6-module audit report...' },
   { title: 'AI Generating Fix Prompts & Action Plan', detail: 'Creating paste-ready LLM prompts for v0, Bolt.new, and Lovable...' },
   { title: 'Synthesizing Health Score & Report', detail: 'Calculating weighted score across all audit modules...' },
 ];
@@ -43,6 +43,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
 
     const cleanUrl = targetUrl || 'https://your-site.com';
     const initialLogs = [`[0.00s] Initializing SiteProof AI Engine v3.0 for ${cleanUrl}`];
+    initialLogs.push(`[0.00s] Mozilla Observatory live security audit active`);
     if (githubRepo) {
       initialLogs.push(`[0.00s] Linked Source Repo: ${githubRepo}`);
       initialLogs.push(`[0.00s] GitHub code extraction will run in parallel with PageSpeed`);
@@ -75,13 +76,18 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
           setGeneratedReportId(res.data.scanId);
           setProgress(100);
           setCurrentStepIndex(steps.length - 1);
-          setLogs((prev) => [
-            ...prev,
+          const newLogs = [
             `[${elapsed}s] Audit complete. Health Score: ${res.data.overallScore}/100`,
-            res.data.aiReport?.source === 'nvidia-ai'
-              ? `[${elapsed}s] AI analysis powered by NVIDIA NIM${res.data.aiReport.model ? ` (${res.data.aiReport.model})` : ''}`
-              : `[${elapsed}s] Report generated from PageSpeed data`,
-          ]);
+          ];
+          if (res.data.observatory?.grade) {
+            newLogs.push(`[${elapsed}s] Mozilla Observatory: Grade ${res.data.observatory.grade} (${res.data.observatory.tests_passed || 0}/${res.data.observatory.tests_quantity || 10} security tests passed)`);
+          }
+          if (res.data.aiReport?.source === 'nvidia-ai') {
+            newLogs.push(`[${elapsed}s] AI analysis powered by NVIDIA NIM${res.data.aiReport.model ? ` (${res.data.aiReport.model})` : ''}`);
+          } else {
+            newLogs.push(`[${elapsed}s] Report generated from PageSpeed & Mozilla Observatory data`);
+          }
+          setLogs((prev) => [...prev, ...newLogs]);
         } else {
           setScanError(res.error || 'Scan failed');
           setLogs((prev) => [

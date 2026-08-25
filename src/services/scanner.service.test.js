@@ -2,10 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { scannerService } from './scanner.service';
 import { runLighthouseAnalysis } from './lighthouse.service';
 import { analyzeWithAI, fetchCodeAnalysis } from './nvidia.service';
+import { fetchObservatoryScan } from './observatory.service';
 import { scanService, reportCache, urlCache } from './database.service';
 
 vi.mock('./lighthouse.service', () => ({
   runLighthouseAnalysis: vi.fn()
+}));
+
+vi.mock('./observatory.service', () => ({
+  fetchObservatoryScan: vi.fn()
 }));
 
 vi.mock('./nvidia.service', () => ({
@@ -34,6 +39,15 @@ describe('Scanner Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchCodeAnalysis.mockResolvedValue({ status: 'ok' });
+    fetchObservatoryScan.mockResolvedValue({
+      grade: 'B',
+      score: 78,
+      tests_passed: 8,
+      tests_failed: 2,
+      tests_quantity: 10,
+      details_url: 'https://developer.mozilla.org/en-US/observatory/analyze?host=example.com',
+      checks: [{ status: 'pass', label: 'MDN Observatory Grade: B (78/100)' }],
+    });
     urlCache.get.mockReturnValue(null);
   });
 
@@ -156,8 +170,42 @@ describe('Scanner Service', () => {
 
     expect(result.success).toBe(true);
     expect(result.data.overallScore).toBe(80); // Fallback to lighthouse score
-    expect(result.data.warnings).toContain('AI analysis unavailable — report shows real Google PageSpeed data only.');
+    expect(result.data.warnings).toContain('AI analysis unavailable — report shows real Google PageSpeed & Mozilla Observatory data.');
     
     consoleSpy.mockRestore();
+  });
+
+  it('incorporates live Mozilla Observatory results into security score and report', async () => {
+    scanService.create.mockResolvedValueOnce({ id: 'scan-sec-1', _local: true });
+    
+    const mockLighthouseResults = {
+      overallScore: 70,
+      scores: { performance: 80, seo: 80, accessibility: 80, bestPractices: 80, security: 50 },
+      modules: [{ id: 'security', title: 'Security', score: '5.0', checks: [] }],
+      issues: [],
+      issuesCount: 0,
+      criticalCount: 0,
+      summary: 'Initial summary',
+    };
+    runLighthouseAnalysis.mockResolvedValueOnce(mockLighthouseResults);
+    analyzeWithAI.mockResolvedValueOnce({ healthScore: 82, summary: 'AI summary', warnings: [] });
+
+    fetchObservatoryScan.mockResolvedValueOnce({
+      grade: 'A+',
+      score: 100,
+      tests_passed: 10,
+      tests_failed: 0,
+      tests_quantity: 10,
+      details_url: 'https://developer.mozilla.org/en-US/observatory/analyze?host=example.com',
+      checks: [{ status: 'pass', label: 'MDN Observatory Grade: A+ (100/100)' }],
+    });
+
+    const result = await scannerService.analyzeSite('https://example.com');
+
+    expect(result.success).toBe(true);
+    expect(result.data.observatory).toBeDefined();
+    expect(result.data.observatory.grade).toBe('A+');
+    expect(result.data.observatory.score).toBe(100);
+    expect(result.data.scores.security).toBe(100);
   });
 });

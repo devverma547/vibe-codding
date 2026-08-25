@@ -21,6 +21,7 @@
  */
 import { runLighthouseAnalysis } from './lighthouse.service';
 import { analyzeWithAI, fetchCodeAnalysis } from './nvidia.service';
+import { fetchObservatoryScan } from './observatory.service';
 import { scanService, reportCache, urlCache } from './database.service';
 import { sanitizeUrl, isValidUrl, sanitizeGithubRepo, isValidGithubRepo } from '../utils/validators';
 
@@ -94,6 +95,7 @@ export const scannerService = {
               criticalCount: cached.criticalCount,
               summary: cached.summary,
               aiReport: cached.aiReport,
+              observatory: cached.observatory || null,
               warnings: cached.warnings || [],
               isCached: true,
               cachedAt: cached.cachedAt,
@@ -115,18 +117,41 @@ export const scannerService = {
 
       if (progressCb) progressCb(10, 1, 'Starting parallel audit pipeline...');
 
-      // 4. Strategy 1: Parallel Execution Engine
-      //    Concurrently dispatch GitHub extraction & Code Quality at t=0 alongside PageSpeed!
+      // 4. Strategy 1: Tri-Parallel Execution Engine
+      //    Concurrently dispatch Mozilla Observatory + GitHub extraction + PageSpeed at t=0!
       const hasGithub = Boolean(githubRepo && isValidGithubRepo(githubRepo).valid);
       const inFlightCodePromise = hasGithub ? fetchCodeAnalysis(githubRepo, finalUrl) : null;
+      const inFlightObservatoryPromise = fetchObservatoryScan(finalUrl);
+
+      if (progressCb) {
+        progressCb(15, 2, hasGithub
+          ? 'Running parallel audits: Google PageSpeed + Mozilla Observatory Security + GitHub source extraction...'
+          : 'Running parallel audits: Google PageSpeed + Mozilla Observatory Live Security Grading...');
+      }
 
       let lighthouseResults;
+      let observatoryData = null;
       try {
-        if (progressCb) progressCb(15, 2, hasGithub
-          ? 'Running parallel scans: Google PageSpeed + GitHub source code extraction...'
-          : 'Running Google PageSpeed Insights audit...');
-        lighthouseResults = await runLighthouseAnalysis(finalUrl, 'mobile');
-        if (progressCb) progressCb(55, 3, 'PageSpeed analysis complete!');
+        const [lhrRes, obsRes] = await Promise.allSettled([
+          runLighthouseAnalysis(finalUrl, 'mobile'),
+          inFlightObservatoryPromise,
+        ]);
+
+        if (lhrRes.status === 'rejected') {
+          throw lhrRes.reason;
+        }
+        lighthouseResults = lhrRes.value;
+
+        if (obsRes.status === 'fulfilled' && obsRes.value) {
+          observatoryData = obsRes.value;
+          if (progressCb) {
+            progressCb(55, 3, `PageSpeed & Mozilla Observatory complete! (MDN Security Grade: ${observatoryData.grade || 'B'})`);
+          }
+        } else {
+          if (progressCb) {
+            progressCb(55, 3, 'PageSpeed analysis complete!');
+          }
+        }
       } catch (lighthouseError) {
         if (userId && !isLocal) {
           await scanService.fail(scanId, lighthouseError.message, isLocal);
@@ -135,6 +160,66 @@ export const scannerService = {
           success: false,
           error: lighthouseError.message || 'Failed to analyze website. Please check the URL is correct and the site is publicly accessible.',
         };
+      }
+
+      // If Mozilla Observatory returned real data, blend it into lighthouseResults
+      if (observatoryData) {
+        lighthouseResults.observatory = observatoryData;
+        if (!lighthouseResults.scores) {
+          lighthouseResults.scores = {};
+        }
+        if (typeof observatoryData.score === 'number') {
+          lighthouseResults.scores.security = observatoryData.score;
+          // Recalculate overall score with live security score
+          lighthouseResults.overallScore = Math.round(
+            (lighthouseResults.scores.performance || 80) * 0.25 +
+            (lighthouseResults.scores.seo || 80) * 0.2 +
+            (lighthouseResults.scores.accessibility || 80) * 0.2 +
+            (lighthouseResults.scores.bestPractices || 80) * 0.15 +
+            (lighthouseResults.scores.security || 80) * 0.2
+          );
+        }
+
+        // Update security module in modules list
+        if (Array.isArray(lighthouseResults.modules)) {
+          const secModIdx = lighthouseResults.modules.findIndex(m => m.id === 'security');
+          if (secModIdx !== -1) {
+            lighthouseResults.modules[secModIdx] = {
+              ...lighthouseResults.modules[secModIdx],
+              title: `Security (MDN Grade ${observatoryData.grade || 'B'})`,
+              score: (observatoryData.score / 10).toFixed(1),
+              description: `MDN Observatory Grade ${observatoryData.grade || 'B'} · ${observatoryData.tests_passed || 0}/${observatoryData.tests_quantity || 10} security tests passed.`,
+              checks: observatoryData.checks && observatoryData.checks.length > 0
+                ? observatoryData.checks
+                : lighthouseResults.modules[secModIdx].checks,
+              source: 'mozilla-observatory',
+              observatory: observatoryData,
+            };
+          }
+        }
+
+        // If tests failed or grade is not A/A+, add actionable security header issue
+        if (observatoryData.tests_failed > 0 || (observatoryData.grade && !observatoryData.grade.startsWith('A'))) {
+          const grade = observatoryData.grade || 'B';
+          const failedCount = observatoryData.tests_failed || 1;
+          if (!Array.isArray(lighthouseResults.issues)) {
+            lighthouseResults.issues = [];
+          }
+          lighthouseResults.issues.unshift({
+            id: 'mozilla-observatory-security-headers',
+            title: `Mozilla Observatory Security Grade ${grade} (${failedCount} header check${failedCount > 1 ? 's' : ''} failed)`,
+            description: `Site received Grade ${grade} on Mozilla / MDN HTTP Observatory with ${failedCount} missing or non-compliant security headers (such as Content-Security-Policy, Strict-Transport-Security, or X-Frame-Options).`,
+            category: 'security',
+            severity: grade === 'F' || grade === 'D' ? 'critical' : grade === 'C' ? 'high' : 'medium',
+            score: (observatoryData.score || 70) / 100,
+            displayValue: `Grade ${grade} (${observatoryData.tests_passed || 0}/${observatoryData.tests_quantity || 10} passed)`,
+            suggestedFix: 'Implement Strict-Transport-Security (HSTS), Content-Security-Policy (CSP), and X-Content-Type-Options headers to reach Grade A+ on Mozilla Observatory.',
+          });
+          lighthouseResults.issuesCount = lighthouseResults.issues.length;
+          if (grade === 'F' || grade === 'D') {
+            lighthouseResults.criticalCount = (lighthouseResults.criticalCount || 0) + 1;
+          }
+        }
       }
 
       // 5. Parallel Netlify Functions for AI analysis (PageSpeed AI + Code Review)
@@ -147,8 +232,8 @@ export const scannerService = {
         if (progressCb) progressCb(85, 6, 'Parallel AI scanning complete!');
       } catch (aiError) {
         console.warn('[Scanner] AI analysis failed (using PageSpeed fallback):', aiError.message);
-        warnings.push('AI analysis unavailable — report shows real Google PageSpeed data only.');
-        if (progressCb) progressCb(85, 6, '⚠️ AI analysis unavailable — showing PageSpeed results');
+        warnings.push('AI analysis unavailable — report shows real Google PageSpeed & Mozilla Observatory data.');
+        if (progressCb) progressCb(85, 6, '⚠️ AI analysis unavailable — showing live benchmark results');
       }
 
       if (progressCb) progressCb(90, 7, 'Saving results...');
@@ -172,6 +257,7 @@ export const scannerService = {
         githubRepo: githubRepo || '',
         ...lighthouseResults,
         overallScore: effectiveScore,
+        observatory: observatoryData || lighthouseResults.observatory || null,
         aiReport: aiReport || null,
         warnings: allWarnings,
         createdAt: new Date().toISOString(),
@@ -193,6 +279,7 @@ export const scannerService = {
           issuesCount: lighthouseResults.issuesCount,
           criticalCount: lighthouseResults.criticalCount,
           summary: aiReport?.summary || lighthouseResults.summary,
+          observatory: observatoryData || lighthouseResults.observatory || null,
           aiReport,
           warnings: allWarnings,
         },

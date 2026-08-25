@@ -9,11 +9,24 @@
     "bestPractices": 78,
     "security": 78
   },
+  "observatory": {
+    "id": 116927207,
+    "host": "vibe-codding-site.netlify.app",
+    "grade": "B",
+    "score": 78,
+    "tests_passed": 8,
+    "tests_failed": 2,
+    "tests_quantity": 10,
+    "details_url": "https://developer.mozilla.org/en-US/observatory/analyze?host=vibe-codding-site.netlify.app",
+    "scanned_at": "2026-08-25T17:23:30.935Z",
+    "isLive": true,
+    "source": "mozilla-observatory"
+  },
   "overallScore": 80,
   "riskLevel": "Medium",
   "issuesCount": 18,
   "criticalCount": 2,
-  "summary": "Analysis of vibe-codding-site.netlify.app returned an overall health score of 80/100. Found 18 issues (2 critical, 5 high priority). Performance scored 72/100, SEO 91/100, Accessibility 85/100, Security 78/100.",
+  "summary": "Analysis of vibe-codding-site.netlify.app returned an overall health score of 80/100. Found 18 issues (2 critical, 5 high priority). Performance scored 72/100, SEO 91/100, Accessibility 85/100, Security 78/100 (Mozilla Observatory Grade B).",
   "webVitals": {
     "lcp": 2800,
     "fcp": 1600,
@@ -46,15 +59,24 @@
   "modules": [
     {
       "id": "security",
-      "title": "Security Analysis",
+      "title": "Security (MDN Grade B)",
       "score": "7.8",
-      "description": "1 check(s) failed. 1 passed.",
-      "source": "google-pagespeed",
+      "description": "MDN Observatory Grade B · 8/10 security tests passed.",
+      "source": "mozilla-observatory",
+      "observatory": {
+        "grade": "B",
+        "score": 78,
+        "tests_passed": 8,
+        "tests_failed": 2,
+        "tests_quantity": 10,
+        "details_url": "https://developer.mozilla.org/en-US/observatory/analyze?host=vibe-codding-site.netlify.app"
+      },
       "checks": [
-        { "status": "pass", "label": "Uses HTTPS" },
-        { "status": "pass", "label": "HTTPS / SSL Certificate" },
-        { "status": "warn", "label": "No Content-Security-Policy header detected" },
-        { "status": "warn", "label": "No Strict-Transport-Security header detected" }
+        { "status": "pass", "label": "MDN Observatory Grade: B (78/100)" },
+        { "status": "pass", "label": "Security Test Suite: 8/10 tests passed (2 missing/needs hardening)" },
+        { "status": "pass", "label": "HTTPS / SSL Encryption & TLS Verification" },
+        { "status": "warn", "label": "Content Security Policy (CSP) needs hardening" },
+        { "status": "pass", "label": "Strict-Transport-Security (HSTS) Header Enabled" }
       ]
     },
     {

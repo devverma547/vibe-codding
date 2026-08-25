@@ -28,6 +28,7 @@ function getCategoryIcon(id) {
 
 function getSourceLabel(source) {
   switch (source) {
+    case 'mozilla-observatory': return { label: 'Mozilla Observatory', icon: ShieldCheck, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' };
     case 'google-pagespeed': return { label: 'Google PageSpeed', icon: Globe, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
     case 'github-code-review': return { label: 'GitHub Code Review', icon: Code, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' };
     default: return { label: 'PageSpeed Data', icon: Database, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
@@ -65,6 +66,7 @@ export default function SampleReportPage() {
   const targetScore = reportData.overallScore;
   const domainName = reportData.url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
   const githubRepoUrl = reportData.githubRepo;
+  const observatory = reportData.observatory || null;
   const modules = reportData.modules || [];
   const allIssues = reportData.issues || [];
   const webVitals = reportData.webVitals || {};
@@ -211,8 +213,13 @@ export default function SampleReportPage() {
               <p className="text-sm text-slate-600 dark:text-gray-300 leading-relaxed max-w-2xl">{reportData.summary}</p>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2 text-xs">
-                <div className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-gray-300">
-                  Security: <span className="font-bold text-slate-900 dark:text-white font-mono">{reportData.scores.security}/100</span>
+                <div className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-gray-300 flex items-center gap-2">
+                  <span>Security: <span className="font-bold text-slate-900 dark:text-white font-mono">{reportData.scores.security}/100</span></span>
+                  {observatory?.grade && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30">
+                      MDN Grade {observatory.grade}
+                    </span>
+                  )}
                 </div>
                 <div className="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400">
                   Passed checks: <span className="font-bold font-mono">{stats.passedChecks}</span>
@@ -317,6 +324,32 @@ export default function SampleReportPage() {
                     </div>
 
                     <p className="text-xs text-slate-600 dark:text-gray-400 leading-relaxed">{m.description}</p>
+
+                    {/* Mozilla Observatory Highlight Banner if security module */}
+                    {m.id === 'security' && (m.observatory || observatory) && (
+                      <div className="p-3 rounded-xl bg-orange-500/5 dark:bg-orange-950/20 border border-orange-500/20 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck size={16} className="text-orange-500 shrink-0" />
+                          <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                            MDN HTTP Observatory:
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30">
+                            Grade {m.observatory?.grade || observatory?.grade || 'B'}
+                          </span>
+                        </div>
+                        {(m.observatory?.details_url || observatory?.details_url) && (
+                          <a
+                            href={m.observatory?.details_url || observatory?.details_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:underline flex items-center gap-1 shrink-0"
+                          >
+                            <span>View MDN Report</span>
+                            <ArrowUpRight size={12} />
+                          </a>
+                        )}
+                      </div>
+                    )}
 
                     <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${numericScore * 10}%` }}
