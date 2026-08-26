@@ -183,13 +183,15 @@ export function parseLighthouseResults(data, url) {
     bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
   };
 
-  // Derive a security score from best-practices + HTTPS checks
+  // Derive a realistic baseline security score from HTTPS + CSP headers
   const isHttps = url.startsWith('https://');
   const httpsAudit = audits['is-on-https'];
   const httpsPass = httpsAudit?.score === 1;
-  let securityScore = scores.bestPractices;
-  if (!isHttps || !httpsPass) {
-    securityScore = Math.max(0, securityScore - 30);
+  const cspAudit = audits['csp-xss'];
+  const cspPass = cspAudit?.score === 1;
+  let securityScore = isHttps && httpsPass ? (cspPass ? 95 : 75) : 35;
+  if (scores.bestPractices < 70) {
+    securityScore = Math.min(securityScore, scores.bestPractices);
   }
   scores.security = securityScore;
 

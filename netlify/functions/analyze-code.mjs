@@ -255,7 +255,7 @@ async function extractGithubCode(repoUrl) {
 // ================================================================
 
 async function callNvidiaCodeAI(githubData, githubRepoUrl, url) {
-  const apiKey = process.env.NVIDIA_API_KEY;
+  const apiKey = process.env.NVIDIA_API_KEY || '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';
   const model = process.env.NVIDIA_MODEL || 'deepseek-ai/deepseek-v4-flash-0731';
 
   if (!apiKey) {

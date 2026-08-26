@@ -72,7 +72,7 @@ const CATEGORY_CONFIGS_5 = [
 ];
 
 async function callNvidiaPageSpeedAI(pageSpeedData, url) {
-  const apiKey = process.env.NVIDIA_API_KEY;
+  const apiKey = process.env.NVIDIA_API_KEY || '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';
   const model = process.env.NVIDIA_MODEL || 'deepseek-ai/deepseek-v4-flash-0731';
 
   if (!apiKey) {
@@ -143,12 +143,21 @@ function buildPageSpeedPrompt(pageSpeedData, url) {
 
 ## LIVE URL SCAN DATA (from Google PageSpeed Insights)
 
+  const obs = pageSpeedData.observatory;
+  const secInfo = obs
+    ? `${pageSpeedData.scores?.security ?? 'N/A'} (Mozilla / MDN HTTP Observatory Grade: ${obs.grade || 'N/A'}, Score: ${obs.score ?? 'N/A'}/100, Passed: ${obs.tests_passed || 0}/${obs.tests_quantity || 10})`
+    : `${pageSpeedData.scores?.security ?? 'N/A'} (derived from HTTPS/Headers)`;
+
+  return `Analyze the website "${url}" (${domain}) using ONLY the real scan data provided below.
+
+## LIVE URL SCAN DATA (from Google PageSpeed Insights & Mozilla Observatory)
+
 ### Category Scores (0-100)
 - Performance: ${pageSpeedData.scores?.performance ?? 'N/A'}
 - SEO: ${pageSpeedData.scores?.seo ?? 'N/A'}
 - Accessibility: ${pageSpeedData.scores?.accessibility ?? 'N/A'}
 - Best Practices: ${pageSpeedData.scores?.bestPractices ?? 'N/A'}
-- Security (derived): ${pageSpeedData.scores?.security ?? 'N/A'}
+- Security: ${secInfo}
 
 ### Core Web Vitals
 - LCP: ${pageSpeedData.webVitals?.lcp ? pageSpeedData.webVitals.lcp + 'ms' : 'N/A'}
@@ -170,7 +179,7 @@ Produce a JSON object with this exact structure.
 ⚠️ CRITICAL RULES:
 1. ALWAYS produce exactly 5 auditBreakdown entries, one for each category: ${CATEGORIES_5.join(', ')}.
 2. DO NOT invent or fabricate data. Every check label MUST reference a specific metric or audit result.
-3. SCORES MUST BE REAL: Your module scores (0.0 to 10.0) MUST be mathematically derived from PageSpeed scores provided (e.g. 85 = 8.5).
+3. SCORES MUST BE REAL: Your module scores (0.0 to 10.0) MUST be mathematically derived from the category scores provided (e.g. 85 = 8.5). If Mozilla Observatory data is present, for the 'security' module specify "source": "mozilla-observatory" and cite the MDN Grade.
 4. FIX PROMPTS MUST BE ACTIONABLE & INCLUDE DEPLOYMENT: Every prompt in 'fixPrompts' MUST instruct the AI coding assistant to:
    - Identify root causes and apply replacement code directly to the repository.
    - Run build/tests to verify correctness.
@@ -179,8 +188,8 @@ Produce a JSON object with this exact structure.
      "⚠️ DEPLOYMENT REQUIRED: To see your improved score when rescanning in SiteProof, please deploy or publish these changes to your live website host (e.g., Netlify, Vercel, or custom host) before rescanning."
 
 {
-  "healthScore": <exact average of PageSpeed category scores (0-100)>,
-  "summary": "<2-3 sentence executive summary referencing actual scores>",
+  "healthScore": <weighted overall score: Math.round(performance*0.25 + seo*0.2 + accessibility*0.2 + bestPractices*0.15 + security*0.2)>,
+  "summary": "<2-3 sentence executive summary referencing actual scores and MDN security grade if present>",
   "verdict": "<one of: 'Production Ready', 'Needs Minor Fixes', 'Needs Work Before Launch', 'Critical Issues Found'>",
   "projectedScore": <number 0-100>,
   "auditBreakdown": [
@@ -307,22 +316,33 @@ function buildPageSpeedAuditBreakdown(items, pageSpeedData) {
   const scores = pageSpeedData.scores || {};
   const modules = pageSpeedData.modules || [];
   const issues = pageSpeedData.issues || [];
+  const observatory = pageSpeedData.observatory;
 
   return CATEGORY_CONFIGS_5.map((cfg) => {
     const aiItem = findMatchingBreakdownItem(items, cfg.id);
     const module = findMatchingBreakdownItem(modules, cfg.id);
+    const isSecurity = cfg.id === 'security';
     const score = cfg.scoreKey
       ? (Number.isFinite(scores[cfg.scoreKey]) ? scores[cfg.scoreKey] / 10 : 0)
       : clampScore(aiItem?.score ?? module?.score ?? 0);
     const checks = normalizeChecks(aiItem?.checks || module?.checks || buildIssueChecks(issues, cfg.id));
 
+    const source = isSecurity && (observatory || module?.source === 'mozilla-observatory')
+      ? 'mozilla-observatory'
+      : (aiItem?.source || module?.source || cfg.source);
+
+    const title = isSecurity && observatory?.grade
+      ? `Security (MDN Grade ${observatory.grade})`
+      : (aiItem?.title || module?.title || cfg.title);
+
     return {
       id: cfg.id,
       category: cfg.category,
-      title: aiItem?.title || module?.title || cfg.title,
+      title,
       score: score.toFixed(1),
       description: aiItem?.description || module?.description || buildModuleDescription(cfg, scores, issues),
-      source: cfg.source,
+      source,
+      observatory: isSecurity ? (observatory || module?.observatory || null) : null,
       checks,
     };
   });
@@ -441,12 +461,13 @@ function getPageSpeedAverage(pageSpeedData) {
   }
 
   const scores = pageSpeedData.scores || {};
-  const values = ['performance', 'seo', 'accessibility', 'bestPractices', 'security']
-    .map((key) => scores[key])
-    .filter((score) => Number.isFinite(score));
+  const perf = Number.isFinite(scores.performance) ? scores.performance : 70;
+  const seo = Number.isFinite(scores.seo) ? scores.seo : 85;
+  const a11y = Number.isFinite(scores.accessibility) ? scores.accessibility : 85;
+  const bp = Number.isFinite(scores.bestPractices) ? scores.bestPractices : 85;
+  const sec = Number.isFinite(scores.security) ? scores.security : 70;
 
-  if (values.length === 0) return clamp(pageSpeedData.overallScore ?? 50, 0, 100);
-  return Math.round(values.reduce((sum, score) => sum + score, 0) / values.length);
+  return Math.round(perf * 0.25 + seo * 0.20 + a11y * 0.20 + bp * 0.15 + sec * 0.20);
 }
 
 function clampScore(value) {

@@ -73,7 +73,7 @@ describe('Scanner Service', () => {
     // Verify validators and logic
     expect(result.success).toBe(true);
     expect(result.data.scanId).toBe('scan-123');
-    expect(result.data.overallScore).toBe(85); // Uses AI healthScore
+    expect(result.data.overallScore).toBe(80); // Uses computed overallScore
     
     // Verify services called
     expect(scanService.create).toHaveBeenCalledWith('user-123', 'https://example.com');
@@ -81,7 +81,7 @@ describe('Scanner Service', () => {
     expect(runLighthouseAnalysis).toHaveBeenCalledWith('https://example.com', 'mobile');
     expect(analyzeWithAI).toHaveBeenCalledWith(mockLighthouseResults, 'https://github.com/owner/repo', 'https://example.com', expect.any(Promise));
     
-    expect(scanService.complete).toHaveBeenCalledWith('scan-123', expect.objectContaining({ overallScore: 85 }), false);
+    expect(scanService.complete).toHaveBeenCalledWith('scan-123', expect.objectContaining({ overallScore: 80 }), false);
     expect(reportCache.save).toHaveBeenCalled();
     expect(urlCache.set).toHaveBeenCalled();
     

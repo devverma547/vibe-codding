@@ -744,9 +744,16 @@ export default function ReportPage() {
               <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                 All Issues Found <span className="text-sm font-normal text-slate-500 dark:text-gray-400 ml-2">({allIssues.length} total)</span>
               </h2>
-              <span className="text-[10px] px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase tracking-wider">
-                Google PageSpeed
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold uppercase tracking-wider flex items-center gap-1">
+                  <Globe size={11} /> Google PageSpeed
+                </span>
+                {observatory && (
+                  <span className="text-[10px] px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <ShieldCheck size={11} /> Mozilla Observatory
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="p-5 rounded-2xl bg-white dark:bg-[#0D1527] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-none">
@@ -770,9 +777,15 @@ export default function ReportPage() {
                         <div className="text-[10px] text-slate-500 dark:text-gray-400 font-mono mt-0.5">{issue.displayValue}</div>
                       )}
                     </div>
-                    <span className="text-[9px] px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 font-mono shrink-0">
-                      {issue.category}
-                    </span>
+                    {issue.id?.startsWith('mozilla-observatory') ? (
+                      <span className="text-[9px] px-2 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 font-mono shrink-0 flex items-center gap-1">
+                        <ShieldCheck size={9} /> Mozilla
+                      </span>
+                    ) : (
+                      <span className="text-[9px] px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 font-mono shrink-0">
+                        {issue.category}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

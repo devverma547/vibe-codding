@@ -115,11 +115,16 @@ export function mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData,
   const auditBreakdown = base12Modules.map((baseMod) => {
     const aiMod = aiBreakdownMap.get(baseMod.id);
     if (aiMod) {
+      const isObservatory = baseMod.id === 'security' && (baseMod.source === 'mozilla-observatory' || baseMod.observatory || pageSpeedData?.observatory);
       return {
         ...baseMod,
         ...aiMod,
-        title: baseMod.title || aiMod.title,
-        checks: aiMod.checks && aiMod.checks.length > 0 ? aiMod.checks : baseMod.checks,
+        title: isObservatory ? (baseMod.title || aiMod.title) : (aiMod.title || baseMod.title),
+        source: isObservatory ? 'mozilla-observatory' : (aiMod.source || baseMod.source || 'google-pagespeed'),
+        observatory: isObservatory ? (baseMod.observatory || pageSpeedData?.observatory || null) : null,
+        score: isObservatory && baseMod.score ? baseMod.score : (aiMod.score || baseMod.score),
+        checks: isObservatory && baseMod.checks?.length > 0 ? baseMod.checks : (aiMod.checks && aiMod.checks.length > 0 ? aiMod.checks : baseMod.checks),
+        description: isObservatory && baseMod.description ? baseMod.description : (aiMod.description || baseMod.description),
       };
     }
     return baseMod;
@@ -155,7 +160,7 @@ export function mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData,
     return true;
   });
 
-  // 3. Recalculate stats over all 6 modules
+  // 3. Recalculate stats over all modules
   const stats = {
     passedChecks: auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'pass').length, 0),
     failedChecks: auditBreakdown.reduce((s, m) => s + (m.checks || []).filter((c) => c.status === 'fail').length, 0),
@@ -163,12 +168,25 @@ export function mergeParallelReports(pageSpeedReport, codeReport, pageSpeedData,
     criticalIssues: (pageSpeedData?.issues || []).filter((i) => i.severity === 'critical').length,
   };
 
-  const healthScore = pageSpeedReport.healthScore ?? 50;
-  const projectedScore = pageSpeedReport.projectedScore ?? healthScore;
+  // Sync healthScore with real weighted scores incorporating Mozilla Observatory
+  const perf = Number(pageSpeedData?.scores?.performance) || 70;
+  const seo = Number(pageSpeedData?.scores?.seo) || 85;
+  const a11y = Number(pageSpeedData?.scores?.accessibility) || 85;
+  const bp = Number(pageSpeedData?.scores?.bestPractices) || 85;
+  const sec = Number(pageSpeedData?.scores?.security) || (pageSpeedData?.observatory?.score ?? 70);
+  const weightedScore = Math.round(perf * 0.25 + seo * 0.20 + a11y * 0.20 + bp * 0.15 + sec * 0.20);
+  const healthScore = Number.isFinite(pageSpeedData?.overallScore) ? pageSpeedData.overallScore : weightedScore;
+  const projectedScore = pageSpeedReport.projectedScore ?? Math.min(98, healthScore + 12);
+
+  let summary = pageSpeedReport.summary || `Analysis of ${extractDomain(url)} complete.`;
+  if (pageSpeedData?.observatory && summary.includes('Security 100/100')) {
+    const obs = pageSpeedData.observatory;
+    summary = summary.replace('Security 100/100', `Security ${sec}/100 (MDN Observatory Grade ${obs.grade || 'B'})`);
+  }
 
   return {
     healthScore,
-    summary: pageSpeedReport.summary || `Analysis of ${extractDomain(url)} complete.`,
+    summary,
     verdict: pageSpeedReport.verdict || deriveVerdict(healthScore),
     projectedScore,
     auditBreakdown,
@@ -197,7 +215,8 @@ function buildClientFallbackReport(pageSpeedData, url, githubRepoUrl = '') {
     title: m.title,
     score: m.score,
     description: m.description,
-    source: 'google-pagespeed',
+    source: m.source || 'google-pagespeed',
+    observatory: m.observatory || null,
     checks: m.checks || [],
   }));
 

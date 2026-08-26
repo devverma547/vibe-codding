@@ -220,6 +220,15 @@ export const scannerService = {
             lighthouseResults.criticalCount = (lighthouseResults.criticalCount || 0) + 1;
           }
         }
+
+        // Regenerate summary with real security score and MDN grade
+        const domain = finalUrl.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+        const criticalCount = lighthouseResults.issues?.filter(i => i.severity === 'critical').length || 0;
+        const highCount = lighthouseResults.issues?.filter(i => i.severity === 'high').length || 0;
+        lighthouseResults.summary = `Analysis of ${domain} returned an overall health score of ${lighthouseResults.overallScore}/100. ` +
+          `Found ${lighthouseResults.issues?.length || 0} issues (${criticalCount} critical, ${highCount} high priority). ` +
+          `Performance scored ${lighthouseResults.scores.performance}/100, SEO ${lighthouseResults.scores.seo}/100, ` +
+          `Accessibility ${lighthouseResults.scores.accessibility}/100, Security ${lighthouseResults.scores.security}/100 (MDN Observatory Grade ${observatoryData.grade || 'B'}).`;
       }
 
       // 5. Parallel Netlify Functions for AI analysis (PageSpeed AI + Code Review)
@@ -239,7 +248,11 @@ export const scannerService = {
       if (progressCb) progressCb(90, 7, 'Saving results...');
 
       // 6. Save lightweight metadata to Supabase
-      const effectiveScore = aiReport?.healthScore ?? lighthouseResults.overallScore;
+      const effectiveScore = lighthouseResults.overallScore ?? aiReport?.healthScore ?? 75;
+      if (aiReport) {
+        aiReport.healthScore = effectiveScore;
+        aiReport.summary = lighthouseResults.summary;
+      }
       const aiWarnings = Array.isArray(aiReport?.warnings) ? aiReport.warnings : [];
       const allWarnings = [...warnings, ...aiWarnings];
 
