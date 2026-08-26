@@ -55,6 +55,17 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
 
     const startTime = Date.now();
 
+    const formatScanError = (rawError, url) => {
+      if (!rawError) return 'Scan failed. Please check the URL and try again.';
+      if (rawError.includes('FAILED_DOCUMENT_REQUEST') || rawError.includes('ERR_CONNECTION_FAILED') || rawError.includes('Could not analyze this website')) {
+        if (url?.endsWith('.a') || url?.includes('.netlify.a')) {
+          return `Could not connect to "${url}". The domain extension appears incomplete (ending in ".a" instead of ".app"). Please use "https://vibe-codding-site.netlify.app" and scan again.`;
+        }
+        return `Could not connect to "${url}". Please verify that the domain name is spelled correctly and that the website is publicly accessible.`;
+      }
+      return rawError;
+    };
+
     // Trigger the REAL fresh scan pipeline (with parallel multitasking)
     scannerService
       .analyzeSite(cleanUrl, githubRepo, user?.id || null, (pct, step, msg) => {
@@ -72,6 +83,7 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
         ]);
       }, { forceRefresh: true })
       .then((res) => {
+        clearInterval(stepInterval);
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 
         if (res.success && res.data) {
@@ -91,19 +103,22 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
           }
           setLogs((prev) => [...prev, ...newLogs]);
         } else {
-          setScanError(res.error || 'Scan failed');
+          const formattedErr = formatScanError(res.error, cleanUrl);
+          setScanError(formattedErr);
           setLogs((prev) => [
             ...prev,
-            `[${elapsed}s] Error: ${res.error || 'Unknown error'}`,
+            `[${elapsed}s] Error: ${formattedErr}`,
           ]);
         }
       })
       .catch((err) => {
+        clearInterval(stepInterval);
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-        setScanError(err.message);
+        const formattedErr = formatScanError(err.message, cleanUrl);
+        setScanError(formattedErr);
         setLogs((prev) => [
           ...prev,
-          `[${elapsed}s] Fatal error: ${err.message}`,
+          `[${elapsed}s] Fatal error: ${formattedErr}`,
         ]);
       });
 
@@ -220,19 +235,20 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
           {/* Live Checklist — keeps users engaged */}
           <div className="space-y-1.5 py-1">
             {steps.map((step, idx) => {
-              const isDone = idx < currentStepIndex;
+              const isDone = idx < currentStepIndex && !hasError;
               const isActive = idx === currentStepIndex && !isFinished && !hasError;
-              const isAllDone = isFinished;
+              const isFailed = hasError && idx === currentStepIndex;
+              const isAllDone = isFinished && !hasError;
 
               return (
                 <div key={idx} className={`flex items-center gap-2.5 text-xs transition-all duration-300 ${
-                  hasError && idx === currentStepIndex ? 'text-red-400' :
+                  isFailed ? 'text-red-400 font-medium' :
                   isDone || isAllDone ? 'text-[#00F5A0]/70' :
                   isActive ? 'text-white font-medium' :
                   'text-gray-600'
                 }`}>
                   <span className="w-5 text-center shrink-0">
-                    {hasError && idx === currentStepIndex ? '✕' :
+                    {isFailed ? '✕' :
                      isDone || isAllDone ? '✅' :
                      isActive ? '⏳' : '○'}
                   </span>

@@ -12,6 +12,19 @@ export const isValidUrl = (url) => {
     if (!parsed.hostname || !parsed.hostname.includes('.')) {
       return { valid: false, error: 'Please enter a valid domain name (e.g. example.com)' };
     }
+
+    const hostParts = parsed.hostname.split('.');
+    const tld = hostParts[hostParts.length - 1]?.toLowerCase();
+    const isIpv4 = hostParts.length === 4 && hostParts.every(part => /^\d+$/.test(part));
+
+    if (!isIpv4) {
+      if (tld === 'a' && parsed.hostname.includes('netlify')) {
+        return { valid: false, error: `Incomplete domain extension ".a". Did you mean ".app" (e.g. ${parsed.hostname}pp)?` };
+      }
+      if (!tld || tld.length < 2 || !/^[a-z]+$/.test(tld)) {
+        return { valid: false, error: `Invalid domain extension ".${tld || ''}". Please enter a complete domain (e.g., .com, .app, .io)` };
+      }
+    }
     
     return { valid: true, error: null, url: formatted };
   } catch {
