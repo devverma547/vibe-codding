@@ -9,19 +9,21 @@
  *     4. Send parallel requests to Netlify Functions:
  *        - /.netlify/functions/analyze-pagespeed (5 standard web modules)
  *        - /.netlify/functions/analyze-code (GitHub extraction + Code Quality)
+ *        - /.netlify/functions/analyze-secrets (Client Bundle Leak Scanner)
  *
  *   Netlify Functions (server-side):
  *     5. Execute in parallel (cuts scan time in half, avoids 20s timeouts)
  *     6. Call NVIDIA NIM AI (key never exposed to browser)
  *
  *   Frontend (continued):
- *     7. Merge parallel JSON reports into single 6-module audit report
+ *     7. Merge parallel JSON reports into single 7-module audit report
  *     8. Save report to Supabase + cache
  *     9. Return enriched report data
  */
 import { runLighthouseAnalysis } from './lighthouse.service';
 import { analyzeWithAI, fetchCodeAnalysis } from './nvidia.service';
 import { fetchObservatoryScan } from './observatory.service';
+import { fetchSecretsScan } from './secrets.service';
 import { scanService, reportCache, urlCache } from './database.service';
 import { sanitizeUrl, isValidUrl, sanitizeGithubRepo, isValidGithubRepo } from '../utils/validators';
 
@@ -117,24 +119,27 @@ export const scannerService = {
 
       if (progressCb) progressCb(10, 1, 'Starting parallel audit pipeline...');
 
-      // 4. Strategy 1: Tri-Parallel Execution Engine
-      //    Concurrently dispatch Mozilla Observatory + GitHub extraction + PageSpeed at t=0!
+      // 4. Strategy 1: Quad-Parallel Execution Engine
+      //    Concurrently dispatch Mozilla Observatory + Secret Scanner + GitHub extraction + PageSpeed at t=0!
       const hasGithub = Boolean(githubRepo && isValidGithubRepo(githubRepo).valid);
       const inFlightCodePromise = hasGithub ? fetchCodeAnalysis(githubRepo, finalUrl) : null;
       const inFlightObservatoryPromise = fetchObservatoryScan(finalUrl);
+      const inFlightSecretsPromise = fetchSecretsScan(finalUrl);
 
       if (progressCb) {
         progressCb(15, 2, hasGithub
-          ? 'Running parallel audits: Google PageSpeed + Mozilla Observatory Security + GitHub source extraction...'
-          : 'Running parallel audits: Google PageSpeed + Mozilla Observatory Live Security Grading...');
+          ? 'Running parallel audits: Google PageSpeed + Mozilla Observatory + Secret Scanner + GitHub source extraction...'
+          : 'Running parallel audits: Google PageSpeed + Mozilla Observatory + Secret Bundle Scanner...');
       }
 
       let lighthouseResults;
       let observatoryData = null;
+      let secretsData = null;
       try {
-        const [lhrRes, obsRes] = await Promise.allSettled([
+        const [lhrRes, obsRes, secretsRes] = await Promise.allSettled([
           runLighthouseAnalysis(finalUrl, 'mobile'),
           inFlightObservatoryPromise,
+          inFlightSecretsPromise,
         ]);
 
         if (lhrRes.status === 'rejected') {
@@ -145,12 +150,23 @@ export const scannerService = {
         if (obsRes.status === 'fulfilled' && obsRes.value) {
           observatoryData = obsRes.value;
           if (progressCb) {
-            progressCb(55, 3, `PageSpeed & Mozilla Observatory complete! (MDN Security Grade: ${observatoryData.grade || 'B'})`);
+            progressCb(50, 3, `PageSpeed & Mozilla Observatory complete! (MDN Security Grade: ${observatoryData.grade || 'B'})`);
           }
         } else {
           if (progressCb) {
-            progressCb(55, 3, 'PageSpeed analysis complete!');
+            progressCb(50, 3, 'PageSpeed analysis complete!');
           }
+        }
+
+        // Collect secret scan results
+        if (secretsRes.status === 'fulfilled' && secretsRes.value) {
+          secretsData = secretsRes.value;
+          const leakMsg = secretsData.totalLeaks > 0
+            ? `🚨 Secret Scanner: ${secretsData.totalLeaks} exposed key${secretsData.totalLeaks > 1 ? 's' : ''} detected!`
+            : '✅ Secret Scanner: No exposed API keys found in client bundles.';
+          if (progressCb) progressCb(55, 4, leakMsg);
+        } else {
+          if (progressCb) progressCb(55, 4, 'Secret bundle scan completed (fallback).');
         }
       } catch (lighthouseError) {
         if (userId && !isLocal) {
@@ -231,6 +247,69 @@ export const scannerService = {
           `Accessibility ${lighthouseResults.scores.accessibility}/100, Security ${lighthouseResults.scores.security}/100 (MDN Observatory Grade ${observatoryData.grade || 'B'}).`;
       }
 
+      // 4b. Merge Secret Scanner results into lighthouseResults
+      if (secretsData && secretsData.totalLeaks > 0) {
+        lighthouseResults.secretsScan = secretsData;
+        if (!Array.isArray(lighthouseResults.issues)) {
+          lighthouseResults.issues = [];
+        }
+
+        // Inject each leaked secret as a critical security issue
+        for (const finding of secretsData.findings) {
+          lighthouseResults.issues.unshift({
+            id: `secret-leak-${finding.id}`,
+            title: `Exposed ${finding.name} in Client Bundle`,
+            description: `A live ${finding.name} (${finding.maskedValue}) was found in your public JavaScript file "${finding.sourceFile}". Anyone visiting your site can extract this key from the browser and abuse it.`,
+            category: 'security',
+            severity: finding.severity,
+            score: 0,
+            displayValue: `${finding.platform} — ${finding.maskedValue}`,
+            suggestedFix: finding.remediation,
+            source: 'siteproof-secret-scanner',
+          });
+        }
+
+        // Update issue counts
+        lighthouseResults.issuesCount = lighthouseResults.issues.length;
+        const criticalLeaks = secretsData.findings.filter(f => f.severity === 'critical').length;
+        lighthouseResults.criticalCount = (lighthouseResults.criticalCount || 0) + criticalLeaks;
+
+        // Penalize security score for leaked secrets
+        if (lighthouseResults.scores) {
+          const penalty = Math.min(40, secretsData.totalLeaks * 15);
+          lighthouseResults.scores.security = Math.max(0, (lighthouseResults.scores.security || 80) - penalty);
+          // Recalculate overall score
+          lighthouseResults.overallScore = Math.round(
+            (lighthouseResults.scores.performance || 80) * 0.25 +
+            (lighthouseResults.scores.seo || 80) * 0.2 +
+            (lighthouseResults.scores.accessibility || 80) * 0.2 +
+            (lighthouseResults.scores.bestPractices || 80) * 0.15 +
+            (lighthouseResults.scores.security || 80) * 0.2
+          );
+        }
+
+        // Update security module in modules list
+        if (Array.isArray(lighthouseResults.modules)) {
+          const secModIdx = lighthouseResults.modules.findIndex(m => m.id === 'security');
+          if (secModIdx !== -1) {
+            const existingChecks = lighthouseResults.modules[secModIdx].checks || [];
+            const secretChecks = secretsData.checks || [];
+            lighthouseResults.modules[secModIdx].checks = [...secretChecks, ...existingChecks];
+          }
+        }
+      } else if (secretsData) {
+        // Clean scan — add a passing check to the security module
+        lighthouseResults.secretsScan = secretsData;
+        if (Array.isArray(lighthouseResults.modules)) {
+          const secModIdx = lighthouseResults.modules.findIndex(m => m.id === 'security');
+          if (secModIdx !== -1) {
+            const existingChecks = lighthouseResults.modules[secModIdx].checks || [];
+            existingChecks.push({ status: 'pass', label: 'No exposed API keys or secrets in client bundles' });
+            lighthouseResults.modules[secModIdx].checks = existingChecks;
+          }
+        }
+      }
+
       // 5. Parallel Netlify Functions for AI analysis (PageSpeed AI + Code Review)
       if (progressCb) progressCb(60, 4, 'Synthesizing audit reports with AI...');
 
@@ -271,6 +350,7 @@ export const scannerService = {
         ...lighthouseResults,
         overallScore: effectiveScore,
         observatory: observatoryData || lighthouseResults.observatory || null,
+        secretsScan: secretsData || lighthouseResults.secretsScan || null,
         aiReport: aiReport || null,
         warnings: allWarnings,
         createdAt: new Date().toISOString(),
@@ -293,6 +373,7 @@ export const scannerService = {
           criticalCount: lighthouseResults.criticalCount,
           summary: aiReport?.summary || lighthouseResults.summary,
           observatory: observatoryData || lighthouseResults.observatory || null,
+          secretsScan: secretsData || lighthouseResults.secretsScan || null,
           aiReport,
           warnings: allWarnings,
         },

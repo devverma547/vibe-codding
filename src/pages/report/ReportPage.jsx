@@ -5,7 +5,7 @@ import {
   ShieldCheck, RefreshCw, Printer, AlertTriangle, CheckCircle2, 
   XCircle, ArrowUpRight, Copy, Check, Sparkles, X, Code, Activity, GitBranch,
   Zap, Eye, Smartphone, FileText, Scale, Wrench, TrendingUp, Server, Palette,
-  Globe
+  Globe, KeyRound
 } from 'lucide-react';
 import { scannerService } from '../../services/scanner.service';
 import { useAuth } from '../../contexts/AuthContext';
@@ -41,6 +41,8 @@ const categoryIcons = {
   technical: Wrench,
   business: TrendingUp,
   infrastructure: Server,
+  'secret-scan': KeyRound,
+  secretScan: KeyRound,
 };
 
 function getCategoryIcon(id) {
@@ -60,6 +62,8 @@ function getSourceLabel(source) {
       return { label: 'GitHub Code Review', icon: Code, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' };
     case 'nvidia-ai':
       return { label: 'NVIDIA AI', icon: Sparkles, color: 'text-green-400 bg-green-500/10 border-green-500/20' };
+    case 'siteproof-secret-scanner':
+      return { label: 'Secret Scanner', icon: KeyRound, color: 'text-red-400 bg-red-500/10 border-red-500/20' };
     default:
       return { label: 'Google PageSpeed', icon: Globe, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
   }

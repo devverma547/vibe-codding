@@ -10,8 +10,9 @@ const steps = [
   { title: 'Running Google PageSpeed Insights', detail: 'Measuring performance, SEO, accessibility, and best practices via Lighthouse API...' },
   { title: 'Extracting Source Code from GitHub', detail: 'Fetching repository file tree and reading critical source files...' },
   { title: 'Live Mozilla Observatory Security Audit', detail: 'Querying MDN Observatory API for TLS, HSTS, CSP, and security grading...' },
+  { title: 'Scanning for Exposed API Keys & Secrets', detail: 'Downloading JS bundles and checking for leaked tokens in client-side code...' },
   { title: 'Core Web Vitals & Payload Metrics', detail: 'Analyzing LCP, CLS, FCP, INP, TTFB, and image optimization...' },
-  { title: 'Sending to AI for Deep Analysis', detail: 'Bundling PageSpeed + source code + Mozilla security for 6-module audit report...' },
+  { title: 'Sending to AI for Deep Analysis', detail: 'Bundling PageSpeed + source code + security data for 7-module audit report...' },
   { title: 'AI Generating Fix Prompts & Action Plan', detail: 'Creating paste-ready LLM prompts for v0, Bolt.new, and Lovable...' },
   { title: 'Synthesizing Health Score & Report', detail: 'Calculating weighted score across all audit modules...' },
 ];
@@ -42,8 +43,9 @@ export default function ScanModal({ isOpen, onClose, targetUrl, githubRepo }) {
     scanTriggered.current = true;
 
     const cleanUrl = targetUrl || 'https://your-site.com';
-    const initialLogs = [`[0.00s] Initializing SiteProof AI Engine v3.0 for ${cleanUrl}`];
+    const initialLogs = [`[0.00s] Initializing SiteProof AI Engine v4.0 for ${cleanUrl}`];
     initialLogs.push(`[0.00s] Mozilla Observatory live security audit active`);
+    initialLogs.push(`[0.00s] Secret & API Key bundle scanner active`);
     if (githubRepo) {
       initialLogs.push(`[0.00s] Linked Source Repo: ${githubRepo}`);
       initialLogs.push(`[0.00s] GitHub code extraction will run in parallel with PageSpeed`);
