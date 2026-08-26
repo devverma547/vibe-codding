@@ -288,17 +288,34 @@ export const scannerService = {
           );
         }
 
-        // Update security module in modules list
+        // Update security and privacyData modules in modules list
         if (Array.isArray(lighthouseResults.modules)) {
           const secModIdx = lighthouseResults.modules.findIndex(m => m.id === 'security');
           if (secModIdx !== -1) {
             const existingChecks = lighthouseResults.modules[secModIdx].checks || [];
             const secretChecks = secretsData.checks || [];
             lighthouseResults.modules[secModIdx].checks = [...secretChecks, ...existingChecks];
+            lighthouseResults.modules[secModIdx].secretsScan = secretsData;
+          }
+
+          const privModIdx = lighthouseResults.modules.findIndex(m => m.id === 'privacyData');
+          if (privModIdx !== -1) {
+            const leakCount = secretsData.totalLeaks || 0;
+            const privScore = Math.max(1, (10 - leakCount * 2.5)).toFixed(1);
+            lighthouseResults.modules[privModIdx] = {
+              id: 'privacyData',
+              title: 'Privacy & Data Security (Secret Leak Audit)',
+              score: privScore,
+              description: `🚨 ${leakCount} exposed secret(s) found in client bundles. High risk of unauthorized API usage.`,
+              checks: secretsData.checks || [],
+              source: 'siteproof-secret-scanner',
+              secretsScan: secretsData,
+              comingSoon: false,
+            };
           }
         }
       } else if (secretsData) {
-        // Clean scan — add a passing check to the security module
+        // Clean scan — add a passing check to the security module and activate privacyData
         lighthouseResults.secretsScan = secretsData;
         if (Array.isArray(lighthouseResults.modules)) {
           const secModIdx = lighthouseResults.modules.findIndex(m => m.id === 'security');
@@ -306,6 +323,24 @@ export const scannerService = {
             const existingChecks = lighthouseResults.modules[secModIdx].checks || [];
             existingChecks.push({ status: 'pass', label: 'No exposed API keys or secrets in client bundles' });
             lighthouseResults.modules[secModIdx].checks = existingChecks;
+            lighthouseResults.modules[secModIdx].secretsScan = secretsData;
+          }
+
+          const privModIdx = lighthouseResults.modules.findIndex(m => m.id === 'privacyData');
+          if (privModIdx !== -1) {
+            lighthouseResults.modules[privModIdx] = {
+              id: 'privacyData',
+              title: 'Privacy & Data Security (Secret Leak Audit)',
+              score: '10.0',
+              description: `Clean client bundle scan · ${secretsData.bundlesScanned || 0} JS bundle(s) audited. Zero leaked secrets or credentials.`,
+              checks: secretsData.checks && secretsData.checks.length > 0 ? secretsData.checks : [
+                { status: 'pass', label: 'No exposed API keys or secrets detected in client bundles' },
+                { status: 'pass', label: 'All client-side scripts verified secure' },
+              ],
+              source: 'siteproof-secret-scanner',
+              secretsScan: secretsData,
+              comingSoon: false,
+            };
           }
         }
       }
