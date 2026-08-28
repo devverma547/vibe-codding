@@ -3,6 +3,7 @@ import { scannerService } from './scanner.service';
 import { runLighthouseAnalysis } from './lighthouse.service';
 import { analyzeWithAI, fetchCodeAnalysis } from './nvidia.service';
 import { fetchObservatoryScan } from './observatory.service';
+import { fetchSecretsScan } from './secrets.service';
 import { scanService, reportCache, urlCache } from './database.service';
 
 vi.mock('./lighthouse.service', () => ({
@@ -11,6 +12,10 @@ vi.mock('./lighthouse.service', () => ({
 
 vi.mock('./observatory.service', () => ({
   fetchObservatoryScan: vi.fn()
+}));
+
+vi.mock('./secrets.service', () => ({
+  fetchSecretsScan: vi.fn()
 }));
 
 vi.mock('./nvidia.service', () => ({
@@ -47,6 +52,13 @@ describe('Scanner Service', () => {
       tests_quantity: 10,
       details_url: 'https://developer.mozilla.org/en-US/observatory/analyze?host=example.com',
       checks: [{ status: 'pass', label: 'MDN Observatory Grade: B (78/100)' }],
+    });
+    fetchSecretsScan.mockResolvedValue({
+      totalLeaks: 0,
+      findings: [],
+      bundlesScanned: 2,
+      inlineScriptsScanned: 1,
+      checks: [{ status: 'pass', label: 'No exposed API keys or secrets in client bundles' }],
     });
     urlCache.get.mockReturnValue(null);
   });

@@ -138,11 +138,6 @@ You MUST respond with ONLY valid JSON. No markdown, no code fences, no explanati
 
 function buildPageSpeedPrompt(pageSpeedData, url) {
   const domain = extractDomain(url);
-
-  return `Analyze the website "${url}" (${domain}) using ONLY the real scan data provided below.
-
-## LIVE URL SCAN DATA (from Google PageSpeed Insights)
-
   const obs = pageSpeedData.observatory;
   const secInfo = obs
     ? `${pageSpeedData.scores?.security ?? 'N/A'} (Mozilla / MDN HTTP Observatory Grade: ${obs.grade || 'N/A'}, Score: ${obs.score ?? 'N/A'}/100, Passed: ${obs.tests_passed || 0}/${obs.tests_quantity || 10})`

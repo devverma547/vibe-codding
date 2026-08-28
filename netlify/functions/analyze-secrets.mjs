@@ -400,7 +400,7 @@ async function downloadBundles(urls) {
           source: extractBundleFilename(bundleUrl),
           content: text.slice(0, MAX_BUNDLE_SIZE),
         };
-      } catch (err) {
+      } catch {
         clearTimeout(timer);
         return null;
       }

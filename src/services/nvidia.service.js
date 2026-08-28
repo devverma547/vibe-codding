@@ -69,6 +69,11 @@ export async function fetchPageSpeedAnalysis(pageSpeedData, url) {
       throw new Error(errData.error || `PageSpeed function error: ${response.status}`);
     }
 
+    const contentType = response.headers?.get?.('content-type') || '';
+    if (contentType && !contentType.includes('application/json')) {
+      throw new Error('PageSpeed function returned non-JSON response (SPA redirect)');
+    }
+
     return await response.json();
   } catch (err) {
     console.warn('[AI] fetchPageSpeedAnalysis failed:', err.message);
@@ -90,6 +95,11 @@ export async function fetchCodeAnalysis(githubRepoUrl, url) {
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
       throw new Error(errData.error || `Code function error: ${response.status}`);
+    }
+
+    const contentType = response.headers?.get?.('content-type') || '';
+    if (contentType && !contentType.includes('application/json')) {
+      throw new Error('Code function returned non-JSON response (SPA redirect)');
     }
 
     return await response.json();

@@ -126,25 +126,30 @@ export async function fetchObservatoryScan(urlOrHost, options = {}) {
   }
 
   // Attempt 2: Serverless proxy function (if running in Netlify environment)
-  try {
-    const proxyController = new AbortController();
-    const proxyTimer = setTimeout(() => proxyController.abort(), 6000);
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    try {
+      const proxyController = new AbortController();
+      const proxyTimer = setTimeout(() => proxyController.abort(), 6000);
 
-    const proxyRes = await fetch('/.netlify/functions/analyze-observatory', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ host }),
-      signal: proxyController.signal,
-    });
+      const proxyRes = await fetch(`${window.location.origin}/.netlify/functions/analyze-observatory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host }),
+        signal: proxyController.signal,
+      });
 
-    clearTimeout(proxyTimer);
+      clearTimeout(proxyTimer);
 
-    if (proxyRes.ok) {
-      const proxyData = await proxyRes.json();
-      return parseObservatoryResponse(proxyData, host, isHttps);
+      if (proxyRes.ok) {
+        const contentType = proxyRes.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const proxyData = await proxyRes.json();
+          return parseObservatoryResponse(proxyData, host, isHttps);
+        }
+      }
+    } catch {
+      // Proxy unavailable (e.g., in local unit tests or offline)
     }
-  } catch (proxyErr) {
-    // Proxy unavailable (e.g., in local unit tests or offline)
   }
 
   // Fallback: Generate derived security baseline when Mozilla Observatory is unavailable

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, Sparkles, Globe, GitBranch, Zap,
   Printer, AlertTriangle, CheckCircle2, XCircle, ArrowUpRight, Copy, Check,
-  X, Code, Eye, Palette, Info, Database, ArrowRight
+  X, Code, Eye, Palette, Info, Database, ArrowRight, KeyRound
 } from 'lucide-react';
 import demoSnapshot from '../../data/demo-snapshot.json';
 import { formatAiFixPrompt } from '../../utils/reportScoring';
@@ -19,6 +19,11 @@ const categoryIcons = {
   bestPractices: CheckCircle2,
   'best-practices': CheckCircle2,
   'code-quality': Code,
+  privacyData: KeyRound,
+  privacy: KeyRound,
+  'privacy-data': KeyRound,
+  'secret-scan': KeyRound,
+  secretScan: KeyRound,
 };
 
 function getCategoryIcon(id) {
@@ -29,6 +34,7 @@ function getCategoryIcon(id) {
 function getSourceLabel(source) {
   switch (source) {
     case 'mozilla-observatory': return { label: 'Mozilla Observatory', icon: ShieldCheck, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' };
+    case 'siteproof-secret-scanner': return { label: 'Secret Scanner', icon: KeyRound, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
     case 'google-pagespeed': return { label: 'Google PageSpeed', icon: Globe, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
     case 'github-code-review': return { label: 'GitHub Code Review', icon: Code, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' };
     default: return { label: 'PageSpeed Data', icon: Database, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' };
@@ -221,6 +227,10 @@ export default function SampleReportPage() {
                     </span>
                   )}
                 </div>
+                <div className="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                  <KeyRound size={13} className="shrink-0" />
+                  <span>Secrets: <span className="font-bold font-mono">Clean (0)</span></span>
+                </div>
                 <div className="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400">
                   Passed checks: <span className="font-bold font-mono">{stats.passedChecks}</span>
                 </div>
@@ -351,6 +361,24 @@ export default function SampleReportPage() {
                       </div>
                     )}
 
+                    {/* Secret & Bundle Scanner Highlight Banner if security or privacyData module */}
+                    {(m.id === 'security' || m.id === 'privacyData') && (
+                      <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <KeyRound size={16} className="text-[#00F5A0] shrink-0" />
+                          <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                            Client Bundle Secret Scanner:
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
+                            ✅ Pass · 0 Leaks
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-mono text-slate-500 dark:text-gray-400">
+                          Client bundles verified safe
+                        </span>
+                      </div>
+                    )}
+
                     <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${numericScore * 10}%` }}
                         transition={{ duration: 1, delay: 0.5 }}
@@ -398,6 +426,9 @@ export default function SampleReportPage() {
                     <ShieldCheck size={11} /> Mozilla Observatory
                   </span>
                 )}
+                <span className="text-[10px] px-2.5 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                  <KeyRound size={11} /> Secret Scanner (Clean)
+                </span>
               </div>
             </div>
 

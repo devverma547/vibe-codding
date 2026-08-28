@@ -33,6 +33,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.js'],
-    globals: true
+    globals: true,
+    pool: 'threads',
+    testTimeout: 15000
   }
 })

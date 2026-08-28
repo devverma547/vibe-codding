@@ -7,7 +7,7 @@
  * Pattern: Matches observatory.service.js structure (direct API → proxy fallback → fallback result)
  */
 
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 6000;
 
 /**
  * Severity badge color mapping for UI rendering
@@ -36,11 +36,11 @@ export function getSecretSeverityColor(severity) {
   }
   if (normalized === 'medium') {
     return {
-      badgeBg: 'bg-amber-500/10',
-      badgeText: 'text-amber-600 dark:text-amber-400',
-      badgeBorder: 'border-amber-500/30',
-      color: '#F59E0B',
-      name: 'amber',
+      badgeBg: 'bg-yellow-500/10',
+      badgeText: 'text-yellow-600 dark:text-yellow-400',
+      badgeBorder: 'border-yellow-500/30',
+      color: '#EAB308',
+      name: 'yellow',
     };
   }
   // pass / clean
@@ -48,8 +48,8 @@ export function getSecretSeverityColor(severity) {
     badgeBg: 'bg-emerald-500/10',
     badgeText: 'text-emerald-600 dark:text-emerald-400',
     badgeBorder: 'border-emerald-500/30',
-    color: '#10B981',
-    name: 'emerald',
+    color: '#00F5A0',
+    name: 'green',
   };
 }
 
@@ -95,6 +95,11 @@ export async function fetchSecretsScan(url, options = {}) {
     clearTimeout(timer);
 
     if (response.ok) {
+      const contentType = response.headers?.get?.('content-type') || '';
+      if (contentType && !contentType.includes('application/json')) {
+        console.warn('[Secrets] Response was not JSON (likely SPA redirect). Using fallback.');
+        return buildFallbackSecretsResult(url);
+      }
       const data = await response.json();
       return parseSecretsResponse(data);
     }
