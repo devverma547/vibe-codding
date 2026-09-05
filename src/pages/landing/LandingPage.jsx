@@ -46,7 +46,7 @@ export default function LandingPage() {
   };
 
   const sampleSites = [
-    { label: 'vibe-codding-site.netlify.app', url: 'https://vibe-codding-site.netlify.app', repo: 'https://github.com/devverma547/vibe-codding' },
+    { label: 'vibe-codding-site.netlify.app', url: 'https://vibe-codding-site.netlify.app', repo: 'https://github.com/devverma547/site_proof' },
     { label: 'novaflow-ai.vercel.app', url: 'https://novaflow-ai.vercel.app', repo: 'https://github.com/novaflow/novaflow-app' },
     { label: 'linear.app', url: 'https://linear.app', repo: 'https://github.com/linear/linear-frontend' }
   ];
